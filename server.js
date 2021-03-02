@@ -14,7 +14,7 @@ const { PUBLIC_FOLDER_NAME } = require("./global/constants");
 
 
 const app = express();
-const SERVER_PORT = process.env.PORT || 4000;
+const SERVER_PORT = process.env.PORT || 4002;
 
 dotenv.config();
 
@@ -83,17 +83,12 @@ db_connect
       res.download(file); // Set disposition and send it.
     });
 
-    app.post('/telnyx', function (req, res) {
-      console.log('telnyx=========>',req);
-      console.log('telnyx=========>',res);
-   });
-
 
     routes.assignRoutes(app);
     app.listen(SERVER_PORT);
     console.log(`Server listening on port ` + SERVER_PORT);
 
-    // startCallsCronJob();
+    startCallsCronJob();
   })
   .catch((err) => {
     console.log("Error: " + err);
