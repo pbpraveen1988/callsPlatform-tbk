@@ -14,7 +14,7 @@ const { PUBLIC_FOLDER_NAME } = require("./global/constants");
 
 
 const app = express();
-const SERVER_PORT = process.env.PORT || 4002;
+const SERVER_PORT = process.env.PORT || 4000;
 
 dotenv.config();
 
