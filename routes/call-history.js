@@ -22,8 +22,10 @@ exports.getStatisticsCall = async (req, res) => {
       const _dbCon = RinglessDB();
       const _totalCallsCompletedCount = await _dbCon.collection('responses').find({ IsError: false, CampaignId: req.query.selectedId }).toArray();
       totalCallsCompletedCount = _totalCallsCompletedCount.length;
+      // console.log('_totalCallsCompletedCount', totalCallsCompletedCount);
       const _failedCount = await _dbCon.collection('responses').find({ IsError: true, CampaignId: req.query.selectedId }).toArray();
       failedCount = _failedCount.length;
+      // console.log('_totalCallsCompletedCount', failedCount);
     }
     // const totalCallsCompletedCount = await (await CallHistory.find(
     //   {
@@ -87,6 +89,10 @@ exports.getStatisticsCall = async (req, res) => {
       _pending = _lastindex;
     } else {
       _pending = totalData && totalData.totalCount - (_lastindex + parseInt(failedCount || 0) + parseInt(dropFailedCount || 0) + totalCallsCompletedCount)
+    }
+
+    if (_pending < 0) {
+      _pending = 0;
     }
 
     return res.status(200).json([

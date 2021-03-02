@@ -1,6 +1,6 @@
 exports.LOCAL_URL = "http://localhost:3002";
-// exports.PROD_URL = "http://localhost:3002";
-// exports.PROD_URL = "http://localhost:3002";
+exports.LOCAL_CALLBACK_URL = 'http://localhost:3012';
+exports.CALLBACK_URL = "http://157.245.219.158:3012"
 exports.PROD_URL = "http://157.245.219.158:3002";
 exports.EXPIRE_TIME_LONG = "48h";
 exports.EXPIRE_TIME_SHORT = "48h";

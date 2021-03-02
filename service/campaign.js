@@ -3,11 +3,50 @@ const fs = require('fs');
 const axios = require('axios');
 const { Campaign } = require('../models/campaign');
 const { CallHistory } = require('../models/call-history');
-const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
+Wconst { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, CALLBACK_URL, LOCAL_CALLBACK_URL, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 const { generateRandomId, isEmpty, getCampaignLog } = require('../utils');
 const { MYSQLDB } = require('../global/constants');
 
 
+
+
+const makeCampaignCallParamsUpdated = (campaign, number, carrierName, numbersPhoneFrom, number_type) => {
+  const record = {
+    audio_url: PROD_URL + AUDIO_FOLDER_PATH + campaign.audioFileName,
+    lead_phone: number.toString().trim(),
+    phone_from: numbersPhoneFrom.toString().trim(),
+    retry: 1,
+    provider: 'telnyx',
+    carrier: carrierName,
+    missed_call: campaign.missedCalls ? 'TRUE' : false,
+    missed_call_pool: campaign.missedCallPool,
+    forward: campaign.callForwardNumber,
+    // callback_url: CALLBACK_URL + CALLBACK_PATH, //TODO, hard coded
+    external_id1: campaign.campaignName,
+    external_id2: campaign._id,
+    external_id3: "3",
+    external_id4: new Date(),
+    number_type: number_type,
+    //new params
+    drop_method: 'ringless',
+    carrier_raw: carrierName === 'CINGULAR' ? 'VERIZON' : carrierName,
+    missed_call_caller_id: campaign.callCenterNumber || MISSED_CALL_NUMBER,
+    // NOT USING FOR NOW
+    //   phone_from: numbersPhoneFrom.toString().trim(),
+    //   send_missed_call: campaign.missed_call,
+    //   //callback_url: PROD_URL + CALLBACK_PATH,
+    //   //new params
+
+  }
+
+  try {
+    getCampaignLog(campaign._id, 'VMDROP PARAMS', record);
+  } catch (e) {
+
+  }
+
+  return record;
+}
 
 const makeCampaignCallParams = (campaign, number, carrierName, numbersPhoneFrom) => {
 
@@ -20,7 +59,8 @@ const makeCampaignCallParams = (campaign, number, carrierName, numbersPhoneFrom)
     Provider: 'telnyx',
     SendMissedCall: campaign.missedCalls ? 'TRUE' : false,
     MissedCallFrom: campaign.callCenterNumber || MISSED_CALL_NUMBER,
-    CampaignId: campaign._id
+    CampaignId: campaign._id,
+    forward: campaign.callForwardNumber
   };
   try {
     getCampaignLog(campaign._id, 'VMDROP PARAMS', _record);
@@ -78,7 +118,7 @@ exports.runCampagins = async timer => {
             const _numbers = await getCarriers(numbers, campaign);
             if (_numbers && _numbers.length > 0) {
               // Passing multiple numbers at once instead of single request.
-              makeVMDropRequestMultiple(_numbers);
+              await makeVMDropRequestMultiple(_numbers);
             }
           } catch (ex) {
             console.log("exception on VM drop =->", ex);
@@ -109,6 +149,11 @@ exports.runCampagins = async timer => {
 
           // update campaign
           const isCallCompleted = campaign.lastIndex + campaign.intervalMinute > counter ? true : false;
+          console.log('isCallCompelted', campaign.lastIndex, campaign.intervalMinute, counter, isCallCompleted);
+
+          //          isCallCompelted 0 1 1 false
+
+
           Campaign.editCampaign({
             _id: campaign._id,
             totalCount: counter,
@@ -178,10 +223,6 @@ const makeVMDropRequestByHistory = async (params, campaignId, number, historyId)
 const getCarriers = async (numbers, campaign) => {
   return new Promise(function (resolve, reject) {
     console.time('SQL_DATA');
-
-
-
-
     console.log('calling stored producedure');
     // const query = `SELECT s.name AS 'CarrierName', s.carrier_type , l.TN AS 'Number',l.LRN AS 'XREF' FROM service_providers s INNER JOIN lrn_data l ON  s.SPID = l.SPID WHERE  l.TN IN (${_inArray})`;
     let paramString = '';
@@ -193,43 +234,60 @@ const getCarriers = async (numbers, campaign) => {
       _newString = _newString.replace(/'/g, "\\'");
       paramString += _newString;
     });
-    const query = `CALL GetCarriers('${paramString}')`;
-    const connection = MYSQLDB();
-    connection.query(query, function (solution, msg) {
-      console.log('response from SP');
-      if (msg) {
-        reject(msg);
-        return console.error(msg);
-      }
-      const result = solution && solution[0];
-      const _results = [];
-      result && result.forEach((res) => {
-        if (res.CarrierName) {
-          const _carrierName = getCarrierName(res.CarrierName);
-          const params = makeCampaignCallParams(campaign, res.Number, _carrierName, campaign.callBackNumber);
-          _results.push(params);
+    if (paramString != '') {
+      const query = `CALL GetCarriers('${paramString}')`;
+      const connection = MYSQLDB();
+      connection.query(query, function (solution, msg) {
+        console.log('response from SP');
+        if (msg) {
+          reject(msg);
+          return console.error(msg);
         }
-      });
-      if (result) {
-        const _diff = numbers.length - result.length;
-        if (_diff > 0) {
-          try {
-            const values = findDeselectedItem(result, numbers);
-            values && values.forEach(n => {
-              const params = makeCampaignCallParams(campaign, n, getCarrierName(undefined), campaign.callBackNumber);
-              _results.push(params);
-            });
-          } catch (Ex) {
-            console.error('Error on delsecting the item');
+        const result = solution && solution[0];
+        const _results = [];
+        result && result.forEach((res) => {
+          if (res.CarrierName) {
+            const _carrierName = getCarrierName(res.CarrierName);
+            const number_type = getServiceProviderType(res.sp_type);
+            const params = makeCampaignCallParamsUpdated(campaign, res.Number, _carrierName, campaign.callBackNumber, number_type);
+            _results.push(params);
+          }
+        });
+        if (result) {
+          const _diff = numbers.length - result.length;
+          if (_diff > 0) {
+            try {
+              const values = findDeselectedItem(result, numbers);
+              values && values.forEach(n => {
+                const number_type = getServiceProviderType(n.sp_type ? n.sp_type : undefined);
+                const params = makeCampaignCallParamsUpdated(campaign, n, getCarrierName(undefined), campaign.callBackNumber, number_type);
+                _results.push(params);
+              });
+            } catch (Ex) {
+              console.error('Error on delsecting the item');
+            }
           }
         }
-      }
 
-      console.timeEnd('SQL_DATA');
-      resolve(_results);
-    });
+        console.timeEnd('SQL_DATA');
+        resolve(_results);
+      });
+    }
 
   })
+}
+
+const getServiceProviderType = (service_provider_type) => {
+  if (service_provider_type == 1) {
+    return 'landline';
+  } else if (service_provider_type == 2) {
+    return 'cell';
+  } else if (service_provider_type == 3) {
+    return 'voip';
+  } else if (service_provider_type == 4) {
+    return 'non-carrier';
+  } else
+    return 'cell'
 }
 
 const findDeselectedItem = (CurrentArray, PreviousArray) => {
@@ -247,7 +305,7 @@ const findDeselectedItem = (CurrentArray, PreviousArray) => {
 const makeVMDropRequestMultiple = async (numbers, campaign) => {
   axios.post(ASTERISKSERVER_URL_MULTIPLE, numbers)
     .then(response => {
-
+      console.log(response.data);
     })
     .catch(error => {
       // const history = {
@@ -300,9 +358,6 @@ const makeVMDropRequest = async (params, campaignId, number) => {
 
 
 const getCarrierName = (carrierName) => {
-
-
-
   if (!carrierName) {
     return 'VERIZON'; // by default setting as verizon.
   }
@@ -316,5 +371,6 @@ const getCarrierName = (carrierName) => {
   if (carrierName.toString().toUpperCase().includes('VERIZON')) {
     return 'VERIZON'
   }
+  return 'VERIZON';
 
 }

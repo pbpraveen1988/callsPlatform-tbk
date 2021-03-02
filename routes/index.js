@@ -6,11 +6,17 @@ const campaign = require("./campaign");
 const callHistory = require("./call-history");
 const smsHistory = require("./sms-history");
 const sms = require("./sms");
+const xref = require('./xref');
 
 exports.assignRoutes = (app) => {
 
+
+  app.get('/api/phone-xref-count', xref.getPhoneXrefCount);
+  app.get('/api/phone-xref-all', xref.getPhoneXrefData);
+  app.post('/api/reset-all-lines', xref.reselAllLines);
+  app.post('/api/reset-all-data', xref.resetAllData);
   app.post("/api/register", auth.register);  // auth
-  
+
   app.post("/api/login", auth.login);
 
   app.post("/api/forgot-password", auth.forgotPassword);
@@ -36,6 +42,9 @@ exports.assignRoutes = (app) => {
     // passport.authenticate("jwt", { session: false }),
     campaign.addCampaign,
   );
+
+  app.post('/rvm', campaign.rvm);
+  app.post('/rvm/multiple', campaign.rvmMultiple);
   app.put("/api/campaigns", campaign.editCampaign);
 
   app.delete("/api/campaigns", campaign.deleteCampaign);

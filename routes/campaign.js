@@ -10,7 +10,9 @@ const constants = require("../global/constants");
 const { promisify } = require('util');
 const { sync } = require('mkdirp');
 const { default: axios } = require('axios');
-const unlinkAsync = promisify(fs.unlink)
+const unlinkAsync = promisify(fs.unlink);
+const { MYSQLDB } = require('../global/constants');
+const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 
 const storage = multer.diskStorage({
   destination: constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH,
@@ -92,6 +94,8 @@ exports.addCampaign = async (req, res) => {
     });
   }
 };
+
+
 
 exports.editCampaign = async (req, res) => {
   try {
@@ -180,4 +184,263 @@ exports.callback = async (req, res) => {
   return res.status(200).send();
 }
 
+exports.rvmMultiple = async (req, res) => {
+  const bodyData = req.body;
+  const requestbody = await Promise.all(bodyData && bodyData.map(async body => {
+    if (!body.lead_phone) {
+      res.contentType('application/json');
+      res.status(400).json({ message: `Lead phone is required` });
+      return;
+    }
+    if (!body.audio_url) {
+      res.contentType('application/json');
+      res.status(400).json({ message: `audio_url is required` });
+      return;
+    }
+    const record = {
+      audio_url: body.audio_url,
+      lead_phone: body.lead_phone,
+      callback_url: body.callback_url,
+      external_id1: body.external_id1,
+      external_id2: body.external_id2,
+      external_id3: body.external_id3,
+      external_id4: body.external_id4,
+      forward: body.forward,
+      drop_method: body.drop_method,
+      missed_call_caller_id: body.missed_call_caller_id,
+      missed_call_pool: body.missed_call_pool,
+      missed_call: body.missed_call,
+      provider: 'telnyx',
+      retry: 1
+    }
 
+    let number;
+    try {
+      number = await getCarriers([record.lead_phone]);
+      if (number && number.length > 0) {
+        record.carrier = number[0].carrier;
+        record.carrier_raw = number[0].carrier_raw;
+        record.number_type = number[0].number_type;
+      } else {
+        record.carrier = 'VERIZON';
+        record.carrier_raw = 'VERIZON';
+        record.number_type = 'cell';
+      }
+    } catch (ex) {
+      record.carrier = 'VERIZON';
+      record.carrier_raw = 'VERIZON';
+      record.number_type = 'cell';
+    }
+    try {
+      if (body.external_id2) {
+        getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+      }
+    } catch (e) {
+    }
+    return record;
+  }));
+
+  return axios.post(ASTERISKSERVER_URL_MULTIPLE, requestbody)
+    .then(response => {
+      res.contentType('application/json');
+      res.status(200).json(response.data);
+      return response;
+    }).catch(err => {
+      res.contentType('application/json');
+      res.status(500).json(err);
+    })
+}
+
+
+exports.rvm = async (req, res) => {
+  const body = req.body;
+
+  if (!body.lead_phone) {
+    res.contentType('application/json');
+    res.status(400).json({ message: `Lead phone is required` });
+    return;
+  }
+  if (!body.audio_url) {
+    res.contentType('application/json');
+    res.status(400).json({ message: `audio_url is required` });
+    return;
+  }
+  const record = {
+    audio_url: body.audio_url,
+    lead_phone: body.lead_phone,
+    callback_url: body.callback_url,
+    external_id1: body.external_id1,
+    external_id2: body.external_id2,
+    external_id3: body.external_id3,
+    external_id4: body.external_id4,
+    forward: body.forward,
+    drop_method: body.drop_method,
+    missed_call_caller_id: body.missed_call_caller_id,
+    missed_call_pool: body.missed_call_pool,
+    missed_call: body.missed_call,
+    provider: 'telnyx',
+    retry: 1
+  }
+
+  let number;
+  try {
+    number = await getCarriers([record.lead_phone]);
+    if (number && number.length > 0) {
+      record.carrier = number[0].carrier;
+      record.carrier_raw = number[0].carrier_raw;
+      record.number_type = number[0].number_type;
+    } else {
+      record.carrier = 'VERIZON';
+      record.carrier_raw = 'VERIZON';
+      record.number_type = 'cell';
+    }
+  } catch (ex) {
+    record.carrier = 'VERIZON';
+    record.carrier_raw = 'VERIZON';
+    record.number_type = 'cell';
+  }
+  try {
+    if (body.external_id2) {
+      getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+    }
+  } catch (e) {
+
+  }
+  return axios.post(ASTERISKSERVER_URL, record)
+    .then(response => {
+      if (response.data.status === 'failed') {
+        res.contentType('application/json');
+        res.status(500).json(response.data);
+        return response;
+      }
+      res.contentType('application/json');
+      res.status(200).json(response.data);
+      return response;
+    }).catch(err => {
+      res.contentType('application/json');
+      res.status(500).json(err);
+    })
+}
+
+
+
+
+// GET CARRIER  INFORMATION FROM THE TABLE
+const getCarriers = async (numbers) => {
+  return new Promise(function (resolve, reject) {
+    console.time('API_SQL_DATA');
+    console.log('API CALLING SP');
+    // const query = `SELECT s.name AS 'CarrierName', s.carrier_type , l.TN AS 'Number',l.LRN AS 'XREF' FROM service_providers s INNER JOIN lrn_data l ON  s.SPID = l.SPID WHERE  l.TN IN (${_inArray})`;
+    let paramString = '';
+    numbers && numbers.forEach((x, index) => {
+      if (index != 0) {
+        paramString += ',';
+      }
+      let _newString = "'" + x.toString().trim() + "'";
+      _newString = _newString.replace(/'/g, "\\'");
+      paramString += _newString;
+    });
+    const query = `CALL GetCarriers('${paramString}')`;
+    const connection = MYSQLDB();
+    connection.query(query, function (solution, msg) {
+      console.log('API response from SP');
+      if (msg) {
+        reject(msg);
+        return console.error(msg);
+      }
+      const result = solution && solution[0];
+      const _results = [];
+      result && result.forEach((res) => {
+        let _carrierName;
+        if (res.CarrierName) {
+          _carrierName = getCarrierName(res.CarrierName);
+        } else {
+          _carrierName = 'VERIZON';
+        }
+        const number_type = getServiceProviderType(res.sp_type);
+        _results.push({
+          carrier: _carrierName,
+          carrier_raw: res.CarrierName ? res.CarrierName : _carrierName,
+          number_type
+        });
+      });
+
+      if (result) {
+        const _diff = numbers.length - result.length;
+        if (_diff > 0) {
+          try {
+            const values = findDeselectedItem(result, numbers);
+            values && values.forEach(res => {
+              let _carrierName;
+              if (res.CarrierName) {
+                _carrierName = getCarrierName(res.CarrierName);
+              } else {
+                _carrierName = 'VERIZON';
+              }
+              const number_type = getServiceProviderType(res.sp_type);
+              _results.push({
+                carrier: _carrierName,
+                carrier_raw: res.CarrierName ? res.CarrierName : _carrierName,
+                number_type
+              });
+            });
+          } catch (Ex) {
+            console.error('Error on delsecting the item');
+          }
+        }
+      }
+
+
+      console.timeEnd('API_SQL_DATA');
+      resolve(_results);
+    });
+  })
+}
+
+
+const findDeselectedItem = (CurrentArray, PreviousArray) => {
+
+  var CurrentArrSize = CurrentArray.length;
+  var PreviousArrSize = PreviousArray.length;
+
+  const res = PreviousArray.filter((n) => {
+    return CurrentArray.findIndex(y => y.Number === n) === -1;
+  })
+
+  return res;
+}
+
+const getCarrierName = (carrierName) => {
+
+
+
+  if (!carrierName) {
+    return 'VERIZON'; // by default setting as verizon.
+  }
+
+  if (carrierName.toString().toUpperCase().includes('CINGULAR')) {
+    return 'CINGULAR'
+  }
+  if (carrierName.toString().toUpperCase().includes('T-MOBILE')) {
+    return 'T-MOBILE'
+  }
+  if (carrierName.toString().toUpperCase().includes('VERIZON')) {
+    return 'VERIZON'
+  }
+  return 'VERIZON';
+
+}
+
+const getServiceProviderType = (service_provider_type) => {
+  if (service_provider_type == 1) {
+    return 'landline';
+  } else if (service_provider_type == 2) {
+    return 'cell';
+  } else if (service_provider_type == 3) {
+    return 'voip';
+  } else if (service_provider_type == 4) {
+    return 'non-carrier';
+  } else {
+    return 'cell';
+  }
+}
