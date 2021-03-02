@@ -3,7 +3,7 @@ const fs = require('fs');
 const axios = require('axios');
 const { Campaign } = require('../models/campaign');
 const { CallHistory } = require('../models/call-history');
-Wconst { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, CALLBACK_URL, LOCAL_CALLBACK_URL, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
+const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, CALLBACK_URL, LOCAL_CALLBACK_URL, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 const { generateRandomId, isEmpty, getCampaignLog } = require('../utils');
 const { MYSQLDB } = require('../global/constants');
 
