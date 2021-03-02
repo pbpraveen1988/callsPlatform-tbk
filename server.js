@@ -88,7 +88,7 @@ db_connect
     app.listen(SERVER_PORT);
     console.log(`Server listening on port ` + SERVER_PORT);
 
-    startCallsCronJob();
+     
   })
   .catch((err) => {
     console.log("Error: " + err);
