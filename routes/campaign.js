@@ -1,7 +1,8 @@
 const multer = require('multer');
 const path = require('path');
+const moment = require('moment');
 const fs = require('fs')
-
+const { v4: uuidv4 } = require('uuid');
 const utils = require("../utils");
 const { Campaign } = require("../models/campaign");
 const { CallHistory } = require("../models/call-history");
@@ -12,7 +13,7 @@ const { sync } = require('mkdirp');
 const { default: axios } = require('axios');
 const unlinkAsync = promisify(fs.unlink);
 const { MYSQLDB } = require('../global/constants');
-const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
+const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, RinglessDB, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 
 const storage = multer.diskStorage({
   destination: constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH,
@@ -172,7 +173,7 @@ exports.deleteCampaign = async (req, res) => {
 
 
 exports.callback = async (req, res) => {
-  console.log('Gobil: callback response->', req.body);
+  //console.log('Gobil: callback response->', req.body);
   const uuid = req.body.uuid; // TODO
 
   const history = await CallHistory.findOne({ uuid });
@@ -185,70 +186,102 @@ exports.callback = async (req, res) => {
 }
 
 exports.rvmMultiple = async (req, res) => {
-  const bodyData = req.body;
-  const requestbody = await Promise.all(bodyData && bodyData.map(async body => {
-    if (!body.lead_phone) {
-      res.contentType('application/json');
-      res.status(400).json({ message: `Lead phone is required` });
-      return;
-    }
-    if (!body.audio_url) {
-      res.contentType('application/json');
-      res.status(400).json({ message: `audio_url is required` });
-      return;
-    }
-    const record = {
-      audio_url: body.audio_url,
-      lead_phone: body.lead_phone,
-      callback_url: body.callback_url,
-      external_id1: body.external_id1,
-      external_id2: body.external_id2,
-      external_id3: body.external_id3,
-      external_id4: body.external_id4,
-      forward: body.forward,
-      drop_method: body.drop_method,
-      missed_call_caller_id: body.missed_call_caller_id,
-      missed_call_pool: body.missed_call_pool,
-      missed_call: body.missed_call,
-      provider: 'telnyx',
-      retry: 1
-    }
+  try {
+    const bodyData = req.body;
+    const requestbody = await Promise.all(bodyData && bodyData.map(async body => {
+      if (!body.lead_phone) {
+        res.contentType('application/json');
+        res.status(400).json({ message: `Lead phone is required` });
+        return;
+      }
+      if (!body.audio_url) {
+        res.contentType('application/json');
+        res.status(400).json({ message: `audio_url is required` });
+        return;
+      }
+      const record = {
+        audio_url: body.audio_url,
+        lead_phone: body.lead_phone,
+        callback_url: body.callback_url,
+        external_id1: body.external_id1,
+        external_id2: body.external_id2,
+        external_id3: body.external_id3,
+        external_id4: body.external_id4,
+        forward: body.forward,
+        drop_method: body.drop_method,
+        missed_call_caller_id: body.missed_call_caller_id,
+        missed_call_pool: body.missed_call_pool,
+        missed_call: body.missed_call,
+        provider: 'telnyx',
+        retry: 1
+      }
 
-    let number;
-    try {
-      number = await getCarriers([record.lead_phone]);
-      if (number && number.length > 0) {
-        record.carrier = number[0].carrier;
-        record.carrier_raw = number[0].carrier_raw;
-        record.number_type = number[0].number_type;
-      } else {
+      let number;
+      try {
+        number = await getCarriers([record.lead_phone]);
+        if (number && number.length > 0) {
+          record.carrier = number[0].carrier;
+          record.carrier_raw = number[0].carrier_raw;
+          record.number_type = number[0].number_type;
+        } else {
+          record.carrier = 'INVALID CARRIER';
+          record.carrier_raw = 'INVALID CARRIER';
+          record.number_type = 'cell';
+        }
+      } catch (ex) {
         record.carrier = 'VERIZON';
         record.carrier_raw = 'VERIZON';
         record.number_type = 'cell';
       }
-    } catch (ex) {
-      record.carrier = 'VERIZON';
-      record.carrier_raw = 'VERIZON';
-      record.number_type = 'cell';
-    }
-    try {
-      if (body.external_id2) {
-        getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+      try {
+        if (body.external_id2) {
+          getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+        }
+      } catch (e) {
       }
-    } catch (e) {
-    }
-    return record;
-  }));
+      return record;
+    }));
 
-  return axios.post(ASTERISKSERVER_URL_MULTIPLE, requestbody)
-    .then(response => {
-      res.contentType('application/json');
-      res.status(200).json(response.data);
-      return response;
-    }).catch(err => {
-      res.contentType('application/json');
-      res.status(500).json(err);
-    })
+
+    const failedBody = requestbody.filter(x => x.carrier === 'INVALID CARRIER');
+    const successBody = requestbody.filter(x => x.carrier !== 'INVALID CARRIER');
+
+
+
+
+
+    let __responses = [];
+    if (failedBody.length) {
+      const _failedResponses = await Promise.all(failedBody && failedBody.map(async (body) => {
+        return await failedResponse(body);
+      }));
+      __responses = __responses.concat(_failedResponses);
+    }
+
+    if (successBody.length) {
+      const successRespose = await axios.post(ASTERISKSERVER_URL_MULTIPLE, successBody).catch(err);
+      if (successRespose.data && successRespose.data.length) {
+        __responses = __responses.concat(successRespose);
+      }
+    }
+
+    res.contentType('application/json');
+    res.status(200).json(__responses);
+    return __responses;
+  } catch (err) {
+    res.contentType('application/json');
+    res.status(500).json(err);
+  }
+
+  // return axios.post(ASTERISKSERVER_URL_MULTIPLE, requestbody)
+  //   .then(response => {
+  //     res.contentType('application/json');
+  //     res.status(200).json(response.data);
+  //     return response;
+  //   }).catch(err => {
+  //     res.contentType('application/json');
+  //     res.status(500).json(err);
+  //   })
 }
 
 
@@ -290,8 +323,8 @@ exports.rvm = async (req, res) => {
       record.carrier_raw = number[0].carrier_raw;
       record.number_type = number[0].number_type;
     } else {
-      record.carrier = 'VERIZON';
-      record.carrier_raw = 'VERIZON';
+      record.carrier = 'INVALID CARRIER';
+      record.carrier_raw = 'INVALID CARRIER';
       record.number_type = 'cell';
     }
   } catch (ex) {
@@ -306,20 +339,28 @@ exports.rvm = async (req, res) => {
   } catch (e) {
 
   }
-  return axios.post(ASTERISKSERVER_URL, record)
-    .then(response => {
-      if (response.data.status === 'failed') {
+
+  if (record.carrier === 'INVALID CARRIER') {
+    const _record = await failedResponse(record);
+    res.contentType('application/json');
+    res.status(500).json(_record);
+    return;
+  } else {
+    return axios.post(ASTERISKSERVER_URL, record)
+      .then(response => {
+        if (response.data.status === 'failed') {
+          res.contentType('application/json');
+          res.status(500).json(response.data);
+          return response;
+        }
         res.contentType('application/json');
-        res.status(500).json(response.data);
+        res.status(200).json(response.data);
         return response;
-      }
-      res.contentType('application/json');
-      res.status(200).json(response.data);
-      return response;
-    }).catch(err => {
-      res.contentType('application/json');
-      res.status(500).json(err);
-    })
+      }).catch(err => {
+        res.contentType('application/json');
+        res.status(500).json(err);
+      })
+  }
 }
 
 
@@ -355,7 +396,7 @@ const getCarriers = async (numbers) => {
         if (res.CarrierName) {
           _carrierName = getCarrierName(res.CarrierName);
         } else {
-          _carrierName = 'VERIZON';
+          _carrierName = 'INVALID CARRIER';
         }
         const number_type = getServiceProviderType(res.sp_type);
         _results.push({
@@ -375,7 +416,7 @@ const getCarriers = async (numbers) => {
               if (res.CarrierName) {
                 _carrierName = getCarrierName(res.CarrierName);
               } else {
-                _carrierName = 'VERIZON';
+                _carrierName = 'INVALID CARRIER';
               }
               const number_type = getServiceProviderType(res.sp_type);
               _results.push({
@@ -411,11 +452,8 @@ const findDeselectedItem = (CurrentArray, PreviousArray) => {
 }
 
 const getCarrierName = (carrierName) => {
-
-
-
   if (!carrierName) {
-    return 'VERIZON'; // by default setting as verizon.
+    return 'INVALID CARRIER'; // by default setting as verizon.
   }
 
   if (carrierName.toString().toUpperCase().includes('CINGULAR')) {
@@ -427,7 +465,7 @@ const getCarrierName = (carrierName) => {
   if (carrierName.toString().toUpperCase().includes('VERIZON')) {
     return 'VERIZON'
   }
-  return 'VERIZON';
+  return 'INVALID CARRIER';
 
 }
 
@@ -443,4 +481,57 @@ const getServiceProviderType = (service_provider_type) => {
   } else {
     return 'cell';
   }
+}
+
+
+
+const failedResponse = async (data) => {
+  const _record = {
+    CallId: uuidv4(),
+    DropId: uuidv4(),
+    PhoneTo: data.lead_phone,
+    //PhoneFrom: rec.PhoneFrom,
+    CallStatus: 'failed',
+    MissedCallFrom: data.missed_call_caller_id,
+    DateAddedToQueue: moment().valueOf(),
+    Carrier: 'UNSUPPORTED CARRIER',
+    Provider: 'telnyx',
+    ChannelCreatedTime: moment().valueOf(),
+    CallStartTime: moment().valueOf(),
+    CallAnsweredTime: moment().valueOf(),
+    PlaybackStartedTime: moment().valueOf(),
+    PlaybackEndedTime: moment().valueOf(),
+    CallEndedTime: moment().valueOf(),
+    IsError: true,
+    ErrorMessage: 'The Carrier Listed Is Not Supported By This Module',
+    DateCreated: moment().valueOf(),
+    StartDate: moment().valueOf(),
+    EndDate: moment().valueOf(),
+    TotalSeconds: 0,
+    TotalCost: 0,
+    Cost: 0,
+    Attempts: 0,
+    Invalid: false,
+    SentToCallback: false,
+    uuid: uuidv4(),
+    CampaignId: data.external_id2,
+    external_id1: data.external_id1,
+    external_id3: data.external_id3,
+    external_id4: data.external_id4,
+    number_type: '',
+    callback_url: data.callback_url,
+    drop_method: data.drop_method,
+    carrier_raw: 'UNSUPPORTED CARRIER',
+    forward: data.forward
+  }
+  const _dbCon = RinglessDB();
+  const _newData = await _dbCon.collection('responses').insertOne(_record);
+  return {
+    id: _record.DropId,
+    uuid: _record.uuid,
+    status: 'failed',
+    carrier: _record.Carrier,
+    message: _record.ErrorMessage,
+    carrier_raw: _record.carrier_raw,
+  };
 }
