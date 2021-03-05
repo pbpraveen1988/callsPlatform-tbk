@@ -287,7 +287,7 @@ exports.rvmMultiple = async (req, res) => {
 
 exports.rvm = async (req, res) => {
   const body = req.body;
-
+  console.log('API REQ BODY', body);
   if (!body.lead_phone) {
     res.contentType('application/json');
     res.status(400).json({ message: `Lead phone is required` });
