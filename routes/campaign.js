@@ -235,7 +235,7 @@ exports.rvmMultiple = async (req, res) => {
       }
       try {
         if (body.external_id2) {
-          getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+          utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
         }
       } catch (e) {
       }
@@ -245,11 +245,6 @@ exports.rvmMultiple = async (req, res) => {
 
     const failedBody = requestbody.filter(x => x.carrier === 'INVALID CARRIER');
     const successBody = requestbody.filter(x => x.carrier !== 'INVALID CARRIER');
-
-
-
-
-
     let __responses = [];
     if (failedBody.length) {
       const _failedResponses = await Promise.all(failedBody && failedBody.map(async (body) => {
@@ -286,6 +281,7 @@ exports.rvmMultiple = async (req, res) => {
 
 
 exports.rvm = async (req, res) => {
+
   const body = req.body;
   console.log('API REQ BODY', body);
   if (!body.lead_phone) {
@@ -334,7 +330,7 @@ exports.rvm = async (req, res) => {
   }
   try {
     if (body.external_id2) {
-      getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+      utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
     }
   } catch (e) {
 
@@ -374,12 +370,14 @@ const getCarriers = async (numbers) => {
     // const query = `SELECT s.name AS 'CarrierName', s.carrier_type , l.TN AS 'Number',l.LRN AS 'XREF' FROM service_providers s INNER JOIN lrn_data l ON  s.SPID = l.SPID WHERE  l.TN IN (${_inArray})`;
     let paramString = '';
     numbers && numbers.forEach((x, index) => {
-      if (index != 0) {
-        paramString += ',';
+      if (x) {
+        if (index != 0) {
+          paramString += ',';
+        }
+        let _newString = "'" + x.toString().trim() + "'";
+        _newString = _newString.replace(/'/g, "\\'");
+        paramString += _newString;
       }
-      let _newString = "'" + x.toString().trim() + "'";
-      _newString = _newString.replace(/'/g, "\\'");
-      paramString += _newString;
     });
     const query = `CALL GetCarriers('${paramString}')`;
     const connection = MYSQLDB();

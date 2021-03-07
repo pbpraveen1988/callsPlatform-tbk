@@ -21,13 +21,13 @@ dotenv.config();
 
 log4js.configure({
   appenders: {
-    backend: {
+    callback: {
       type: 'multiFile', base: 'logs/', property: 'campaignId', extension: '.log'
       // maxLogSize: 10485760, backups: 3, compress: true
     }
   },
   categories: {
-    default: { appenders: ['backend'], level: 'debug' }
+    default: { appenders: ['callback'], level: 'debug' }
   }
 });
 
