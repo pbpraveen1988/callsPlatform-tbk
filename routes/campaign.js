@@ -330,7 +330,7 @@ exports.rvm = async (req, res) => {
   }
   try {
     if (body.external_id2) {
-      utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS', record);
+      utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
     }
   } catch (e) {
 
