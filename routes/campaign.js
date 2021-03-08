@@ -309,7 +309,7 @@ exports.rvm = async (req, res) => {
   await __response && __response.pipe(file);
 
 
-  audio_url = 'http://138.68.245.156:4000/' + _filename;
+  audio_url = 'http://138.68.245.156:4000/'+ AUDIO_FOLDER_PATH + _filename;
 
 
 
