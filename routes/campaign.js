@@ -236,8 +236,8 @@ exports.rvmMultiple = async (req, res) => {
         record.number_type = 'cell';
       }
       try {
-        if (body.external_id2) {
-          utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
+        if (body.external_id1) {
+          utils.getCampaignLog(body.external_id1, 'VMDROP PARAMS via API', record);
         }
       } catch (e) {
       }
@@ -340,8 +340,8 @@ exports.rvm = async (req, res) => {
       record.number_type = 'cell';
     }
     try {
-      if (body.external_id2) {
-        utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
+      if (body.external_id1) {
+        utils.getCampaignLog(body.external_id1, 'VMDROP PARAMS via API', record);
       }
     } catch (e) {
 
