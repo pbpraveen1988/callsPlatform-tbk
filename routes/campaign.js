@@ -305,6 +305,7 @@ exports.rvm = async (req, res) => {
     if (err) {
       throw err;
     }
+    console.log(' REQUEST UPDATED URL  ', constants.PROD_URL_CLIENT + AUDIO_FOLDER_PATH + _filename);
     const record = {
       audio_url: constants.PROD_URL_CLIENT + AUDIO_FOLDER_PATH + _filename,
       lead_phone: body.lead_phone,
