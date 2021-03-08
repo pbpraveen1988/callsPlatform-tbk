@@ -298,18 +298,22 @@ exports.rvm = async (req, res) => {
   }
 
   let audio_url = body.audio_url;
-  const _filename = Date.now() + '_' + body.external_id1 + '.wav';
-  const file = fs.createWriteStream(constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH + _filename);
-  let __response;
-  if (audio_url.includes('https')) {
-    __response = await https.get(audio_url);
-  } else {
-    __response = await http.get(audio_url);
-  }
-  await __response && __response.pipe(file);
+  // const _filename = Date.now() + '_' + body.external_id1 + '.wav';
+  // const file = fs.createWriteStream(constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH + _filename);
+
+  // download(audio_url,file,postRequest)  
 
 
-  audio_url = 'http://138.68.245.156:4000/'+ AUDIO_FOLDER_PATH + _filename;
+  // let __response;
+  // if (audio_url.includes('https')) {
+  //   __response = await https.get(audio_url);
+  // } else {
+  //   __response = await http.get(audio_url);
+  // }
+  // await __response && __response.pipe(file);
+
+
+  // audio_url = 'http://138.68.245.156:4000/' + AUDIO_FOLDER_PATH + _filename;
 
 
 
@@ -553,3 +557,31 @@ const failedResponse = async (data) => {
     carrier_raw: _record.carrier_raw,
   };
 }
+
+
+
+
+var download = function (url, dest, cb) {
+  var file = fs.createWriteStream(dest);
+  if (url.includes('https')) {
+    var request = https.get(url, function (response) {
+      response.pipe(file);
+      file.on('finish', function () {
+        file.close(cb);  // close() is async, call cb after close completes.
+      });
+    }).on('error', function (err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      if (cb) cb(err.message);
+    });
+  } else {
+    var request = http.get(url, function (response) {
+      response.pipe(file);
+      file.on('finish', function () {
+        file.close(cb);  // close() is async, call cb after close completes.
+      });
+    }).on('error', function (err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      if (cb) cb(err.message);
+    });
+  }
+};
