@@ -13,6 +13,8 @@ const { sync } = require('mkdirp');
 const { default: axios } = require('axios');
 const unlinkAsync = promisify(fs.unlink);
 const { MYSQLDB } = require('../global/constants');
+const http = require('http'); // or 'https' for https:// URLs
+const https = require('https');
 const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, RinglessDB, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 
 const storage = multer.diskStorage({
@@ -294,8 +296,26 @@ exports.rvm = async (req, res) => {
     res.status(400).json({ message: `audio_url is required` });
     return;
   }
+
+  let audio_url = body.audio_url;
+  const _filename = Date.now() + '_' + body.external_id1 + '.wav';
+  const file = fs.createWriteStream(constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH + _filename);
+  let __response;
+  if (audio_url.includes('https')) {
+    __response = await https.get(audio_url);
+  } else {
+    __response = await http.get(audio_url);
+  }
+  await __response && __response.pipe(file);
+
+
+  audio_url = 'http://138.68.245.156:4000/' + _filename;
+
+
+
+
   const record = {
-    audio_url: body.audio_url,
+    audio_url: audio_url,
     lead_phone: body.lead_phone,
     callback_url: body.callback_url,
     external_id1: body.external_id1,

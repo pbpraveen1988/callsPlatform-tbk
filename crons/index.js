@@ -13,8 +13,8 @@ const createCronJob = () => {
     try {
       // TEST_CODE
       await convertFilesToAsteriskFormat(timer);
-      await runCampagins(timer);
-      await runSmsCampagins(timer);
+      // await runCampagins(timer);
+      // await runSmsCampagins(timer);
       if (timer++ > MAX_TIMER_VALUE) {
         timer = 0;
       }
