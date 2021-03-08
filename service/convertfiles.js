@@ -31,7 +31,7 @@ exports.convertFilesToAsteriskFormat = async timer => {
                     if (name[1] != 'csv') {
 
 
-                        const child = exec(`sox ${directoryPath + file}  -t wav -c 1 -r 8000 ${tempPath + file}`,
+                        const child = exec(`sox ${directoryPath + file} -t wav -c 1 -r 8000 ${tempPath + file}`,
                             (error, stdout, stderr) => {
                                 console.log(`stdout: ${stdout}`);
                                 console.log(`stderr: ${stderr}`);
