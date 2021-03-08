@@ -31,7 +31,7 @@ exports.convertFilesToAsteriskFormat = async timer => {
                     if (name[1] != 'csv') {
 
 
-                        const child = exec(`sox ${directoryPath + file} -c 1 -r 8000 ${tempPath + file}`,
+                        const child = exec(`sox ${directoryPath + file}  -t wav -c 1 -r 8000 ${tempPath + file}`,
                             (error, stdout, stderr) => {
                                 console.log(`stdout: ${stdout}`);
                                 console.log(`stderr: ${stderr}`);
@@ -40,7 +40,7 @@ exports.convertFilesToAsteriskFormat = async timer => {
                                     console.log(`exec error: ${error}`);
                                 }
                                 mkdirp(outputPath).then(resp => {
-                                    exec(`sox ${tempPath + file} -c 1 -r 8000 ${outputPath + file}`,
+                                    exec(`sox ${tempPath + file}  -t wav -c 1 -r 8000 ${outputPath + file}`,
                                         (error, stdout, stderr) => {
                                             try {
                                                 fs.unlinkSync(directoryPath + file);
