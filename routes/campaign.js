@@ -298,6 +298,78 @@ exports.rvm = async (req, res) => {
   }
 
   let audio_url = body.audio_url;
+  const _filename = Date.now() + '_' + body.external_id1 + '.wav';
+  const file = constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH + _filename;
+  download(audio_url, file, async (err) => {
+
+    if (err) {
+      throw err;
+    }
+    const record = {
+      audio_url: constants.PROD_URL_CLIENT + AUDIO_FOLDER_PATH + _filename,
+      lead_phone: body.lead_phone,
+      callback_url: body.callback_url,
+      external_id1: body.external_id1,
+      external_id2: body.external_id2,
+      external_id3: body.external_id3,
+      external_id4: body.external_id4,
+      forward: body.forward,
+      drop_method: body.drop_method,
+      missed_call_caller_id: body.missed_call_caller_id,
+      missed_call_pool: body.missed_call_pool,
+      missed_call: body.missed_call,
+      provider: 'telnyx',
+      retry: 1
+    }
+
+    let number;
+    try {
+      number = await getCarriers([record.lead_phone]);
+      if (number && number.length > 0) {
+        record.carrier = number[0].carrier;
+        record.carrier_raw = number[0].carrier_raw;
+        record.number_type = number[0].number_type;
+      } else {
+        record.carrier = 'INVALID CARRIER';
+        record.carrier_raw = 'INVALID CARRIER';
+        record.number_type = 'cell';
+      }
+    } catch (ex) {
+      record.carrier = 'VERIZON';
+      record.carrier_raw = 'VERIZON';
+      record.number_type = 'cell';
+    }
+    try {
+      if (body.external_id2) {
+        utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
+      }
+    } catch (e) {
+
+    }
+
+    if (record.carrier === 'INVALID CARRIER') {
+      const _record = await failedResponse(record);
+      res.contentType('application/json');
+      res.status(500).json(_record);
+      return;
+    } else {
+      return axios.post(ASTERISKSERVER_URL, record)
+        .then(response => {
+          if (response.data.status === 'failed') {
+            res.contentType('application/json');
+            res.status(500).json(response.data);
+            return response;
+          }
+          res.contentType('application/json');
+          res.status(200).json(response.data);
+          return response;
+        }).catch(err => {
+          res.contentType('application/json');
+          res.status(500).json(err);
+        })
+    }
+  });
+
   // const _filename = Date.now() + '_' + body.external_id1 + '.wav';
   // const file = fs.createWriteStream(constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH + _filename);
 
@@ -315,72 +387,6 @@ exports.rvm = async (req, res) => {
 
   // audio_url = 'http://138.68.245.156:4000/' + AUDIO_FOLDER_PATH + _filename;
 
-
-
-
-  const record = {
-    audio_url: audio_url,
-    lead_phone: body.lead_phone,
-    callback_url: body.callback_url,
-    external_id1: body.external_id1,
-    external_id2: body.external_id2,
-    external_id3: body.external_id3,
-    external_id4: body.external_id4,
-    forward: body.forward,
-    drop_method: body.drop_method,
-    missed_call_caller_id: body.missed_call_caller_id,
-    missed_call_pool: body.missed_call_pool,
-    missed_call: body.missed_call,
-    provider: 'telnyx',
-    retry: 1
-  }
-
-  let number;
-  try {
-    number = await getCarriers([record.lead_phone]);
-    if (number && number.length > 0) {
-      record.carrier = number[0].carrier;
-      record.carrier_raw = number[0].carrier_raw;
-      record.number_type = number[0].number_type;
-    } else {
-      record.carrier = 'INVALID CARRIER';
-      record.carrier_raw = 'INVALID CARRIER';
-      record.number_type = 'cell';
-    }
-  } catch (ex) {
-    record.carrier = 'VERIZON';
-    record.carrier_raw = 'VERIZON';
-    record.number_type = 'cell';
-  }
-  try {
-    if (body.external_id2) {
-      utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
-    }
-  } catch (e) {
-
-  }
-
-  if (record.carrier === 'INVALID CARRIER') {
-    const _record = await failedResponse(record);
-    res.contentType('application/json');
-    res.status(500).json(_record);
-    return;
-  } else {
-    return axios.post(ASTERISKSERVER_URL, record)
-      .then(response => {
-        if (response.data.status === 'failed') {
-          res.contentType('application/json');
-          res.status(500).json(response.data);
-          return response;
-        }
-        res.contentType('application/json');
-        res.status(200).json(response.data);
-        return response;
-      }).catch(err => {
-        res.contentType('application/json');
-        res.status(500).json(err);
-      })
-  }
 }
 
 
@@ -562,7 +568,11 @@ const failedResponse = async (data) => {
 
 
 var download = function (url, dest, cb) {
-  var file = fs.createWriteStream(dest);
+  if (fs.existsSync(dest)) {
+    cb();
+    return;
+  }
+  const file = fs.createWriteStream(dest);
   if (url.includes('https')) {
     var request = https.get(url, function (response) {
       response.pipe(file);
