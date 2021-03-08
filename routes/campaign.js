@@ -298,8 +298,8 @@ exports.rvm = async (req, res) => {
     audio_url: body.audio_url,
     lead_phone: body.lead_phone,
     callback_url: body.callback_url,
-    external_id1: body.external_id1,
-    external_id2: body.external_id2,
+    external_id1: body.external_id2,
+    external_id2: body.external_id1,
     external_id3: body.external_id3,
     external_id4: body.external_id4,
     forward: body.forward,
@@ -329,8 +329,8 @@ exports.rvm = async (req, res) => {
     record.number_type = 'cell';
   }
   try {
-    if (body.external_id2) {
-      utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
+    if (body.external_id1) {
+      utils.getCampaignLog(body.external_id1, 'VMDROP PARAMS via API', record);
     }
   } catch (e) {
 
