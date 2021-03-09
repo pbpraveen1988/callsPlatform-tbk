@@ -30,8 +30,16 @@ exports.convertFilesToAsteriskFormat = async timer => {
                     const name = file.split('.');
                     if (name[1] != 'csv') {
 
+                        let convertCmd = '';
 
-                        const child = exec(`sox ${directoryPath + file} -t wav -c 1 -r 8000 ${tempPath + file}`,
+                        if (name[1] === 'wav') {
+                            convertCmd = `sox ${directoryPath + file} -c 1 -r 8000 ${tempPath + file}`;
+                        } else {
+                            convertCmd = `sox ${directoryPath + file} -v 0.5 -t wav - -t wav -b 16 -r 8000 -c 1 ${tempPath + file}`
+                        }
+
+
+                        const child = exec(convertCmd,
                             (error, stdout, stderr) => {
                                 console.log(`stdout: ${stdout}`);
                                 console.log(`stderr: ${stderr}`);
@@ -40,7 +48,13 @@ exports.convertFilesToAsteriskFormat = async timer => {
                                     console.log(`exec error: ${error}`);
                                 }
                                 mkdirp(outputPath).then(resp => {
-                                    exec(`sox ${tempPath + file}  -t wav -c 1 -r 8000 ${outputPath + file}`,
+                                    let convertTempCmd = '';
+                                    if (name[1] === 'wav') {
+                                        convertTempCmd = `sox ${tempPath + file} -c 1 -r 8000 ${outputPath + file}`;
+                                    } else {
+                                        convertTempCmd = `sox ${tempPath + file} -v 0.5 -t wav - -t wav -b 16 -r 8000 -c 1 ${outputPath + file}`
+                                    }
+                                    exec(convertTempCmd,
                                         (error, stdout, stderr) => {
                                             try {
                                                 fs.unlinkSync(directoryPath + file);
