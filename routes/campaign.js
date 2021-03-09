@@ -427,7 +427,7 @@ const getCarriers = async (numbers) => {
         if (res.CarrierName) {
           _carrierName = getCarrierName(res.CarrierName);
         } else {
-          _carrierName = 'INVALID CARRIER';
+          _carrierName = 'VERIZON';
         }
         const number_type = getServiceProviderType(res.sp_type);
         _results.push({
@@ -447,7 +447,7 @@ const getCarriers = async (numbers) => {
               if (res.CarrierName) {
                 _carrierName = getCarrierName(res.CarrierName);
               } else {
-                _carrierName = 'INVALID CARRIER';
+                _carrierName = 'VERIZON';
               }
               const number_type = getServiceProviderType(res.sp_type);
               _results.push({
