@@ -484,7 +484,7 @@ const findDeselectedItem = (CurrentArray, PreviousArray) => {
 
 const getCarrierName = (carrierName) => {
   if (!carrierName) {
-    return 'INVALID CARRIER'; // by default setting as verizon.
+    return 'VERIZON'; // by default setting as verizon.
   }
 
   if (carrierName.toString().toUpperCase().includes('CINGULAR')) {
@@ -496,7 +496,7 @@ const getCarrierName = (carrierName) => {
   if (carrierName.toString().toUpperCase().includes('VERIZON')) {
     return 'VERIZON'
   }
-  return 'INVALID CARRIER';
+  return 'VERIZON';
 
 }
 
