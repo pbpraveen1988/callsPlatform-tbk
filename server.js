@@ -7,7 +7,7 @@ const dotenv = require("dotenv");
 const compression = require("compression");
 const path = require('path');
 const log4js = require("log4js");
-
+const fs = require('fs');
 const db_connect = require("./tools/db-connect");
 const { startCallsCronJob } = require("./crons");
 const { PUBLIC_FOLDER_NAME } = require("./global/constants");
