@@ -77,20 +77,20 @@ exports.DBConnectMongoose = function () {
     const mongo_rm = "mongodb://127.0.0.1:27017/RinglessVM";
     const mongoDB = "RinglessVM";
     mongoose
-      .connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, poolSize: 10 });
-    .then(async () => {
-      db = mongoose.connection;
-      console.log("mongo connection created");
-      const _conn = await MongoClient.connect(mongo_rm, { useUnifiedTopology: true, useNewUrlParser: true, poolSize: 10 });
-      _db = _conn.db(mongoDB);
-      console.log("Ringless connection created");
-      RinglessDB(_db);
-      resolve({ calls: db, ringless: _db });
+      .connect(mongo_uri, { useNewUrlParser: true, useFindAndModify: false, poolSize: 10 })
+      .then(async () => {
+        db = mongoose.connection;
+        console.log("mongo connection created");
+        const _conn = await MongoClient.connect(mongo_rm, { useNewUrlParser: true, poolSize: 10 });
+        _db = _conn.db(mongoDB);
+        console.log("Ringless connection created");
+        RinglessDB(_db);
+        resolve({ calls: db, ringless: _db });
 
-    })
-    .catch((error) => {
-      console.log("ray : [tools db-connect] error => ", error);
-      reject(error);
-    });
-});
+      })
+      .catch((error) => {
+        console.log("ray : [tools db-connect] error => ", error);
+        reject(error);
+      });
+  });
 };
