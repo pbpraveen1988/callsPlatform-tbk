@@ -53,12 +53,20 @@ db_connect
     var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 
     // setup the logger
-    app.use(logger('combined', { stream: accessLogStream }))
+
+    logger.token('req-headers', function (req, res) {
+      return JSON.stringify(req.headers)
+    })
+
+    app.use(logger(':method :url :status :req-headers', { stream: accessLogStream }))
 
     // bodyParser, parses the request body to be a readable json format
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json({ limit: "50mb" }));
-   // app.use(logger("dev"));
+    // app.use(logger("dev"));
+
+
+
 
     app.use(compression());
     // app.use(express.static(path.join(__dirname, 'public')));
