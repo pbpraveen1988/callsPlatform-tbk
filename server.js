@@ -53,7 +53,7 @@ db_connect
     var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 
     // setup the logger
-    app.use(morgan('combined', { stream: accessLogStream }))
+    app.use(logger('combined', { stream: accessLogStream }))
 
     // bodyParser, parses the request body to be a readable json format
     app.use(bodyParser.urlencoded({ extended: false }));
