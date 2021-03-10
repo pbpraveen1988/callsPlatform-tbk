@@ -77,7 +77,7 @@ exports.DBConnectMongoose = function () {
     const mongo_rm = "mongodb://127.0.0.1:27017/RinglessVM";
     const mongoDB = "RinglessVM";
     mongoose
-      .connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, poolSize: 10 } })
+      .connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, poolSize: 10 });
     .then(async () => {
       db = mongoose.connection;
       console.log("mongo connection created");
