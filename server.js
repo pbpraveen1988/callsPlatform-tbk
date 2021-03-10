@@ -55,7 +55,7 @@ db_connect
     // setup the logger
 
     logger.token('req-headers', function (req, res) {
-      return JSON.stringify(req.headers)
+      return req.body ? JSON.stringify(req.body) : req.body;
     })
 
     app.use(logger(':method :url :status :req-headers', { stream: accessLogStream }))
