@@ -47,10 +47,18 @@ db_connect
     app.use(passport.initialize());
     require("./passport")(passport);
 
+
+
+    // create a write stream (in append mode)
+    var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
+
+    // setup the logger
+    app.use(morgan('combined', { stream: accessLogStream }))
+
     // bodyParser, parses the request body to be a readable json format
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json({ limit: "50mb" }));
-    app.use(logger("dev"));
+   // app.use(logger("dev"));
 
     app.use(compression());
     // app.use(express.static(path.join(__dirname, 'public')));
@@ -87,8 +95,8 @@ db_connect
     routes.assignRoutes(app);
     app.listen(SERVER_PORT);
     console.log(`Server listening on port ` + SERVER_PORT);
-   // startCallsCronJob();
-     
+    // startCallsCronJob();
+
   })
   .catch((err) => {
     console.log("Error: " + err);
