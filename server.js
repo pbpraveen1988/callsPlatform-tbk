@@ -1,6 +1,5 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const logger = require("morgan");
 const cors = require("cors");
 const passport = require("passport");
 const dotenv = require("dotenv");
@@ -21,13 +20,19 @@ dotenv.config();
 
 log4js.configure({
   appenders: {
+
     callback: {
       type: 'multiFile', base: 'logs/', property: 'campaignId', extension: '.log'
       // maxLogSize: 10485760, backups: 3, compress: true
+    },
+    express: {
+      type: 'file', base: 'express/', filename: 'express/express.log',
+      maxLogSize: 10485760, backups: 10000, compress: true
     }
   },
   categories: {
-    default: { appenders: ['callback'], level: 'debug' }
+    default: { appenders: ['callback'], level: 'debug' },
+    expressCat: { appenders: ['express'], level: 'debug' }
   }
 });
 
@@ -49,16 +54,14 @@ db_connect
 
 
 
-    // create a write stream (in append mode)
-    var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
-
     // setup the logger
 
-    logger.token('req-headers', function (req, res) {
-      return req.body ? JSON.stringify(req.body) : req.body;
-    })
+    var logger = log4js.getLogger('expressCat');
+    app.use(log4js.connectLogger(logger, {
+      level: 'auto',
+      format: (req, res, format) => format(`:method :url ${JSON.stringify(req.body)}`)
+    }));
 
-    app.use(logger(':method :url :status :req-headers', { stream: accessLogStream }))
 
     // bodyParser, parses the request body to be a readable json format
     app.use(bodyParser.urlencoded({ extended: false }));
@@ -84,11 +87,13 @@ db_connect
       })
     );
 
-    app.get('/ui-logs-download', function (req, res) {
-      const file = `${__dirname}/access.log`;
+    app.get('/logs', function (req, res) {
+      const file = `${__dirname}/express/express.log`;
       res.download(file); // Set disposition and send it.
     });
 
+
+    
     app.get('/ccfuel-logs-download', function (req, res) {
       const file = `${__dirname}/public/debug.log`;
       res.download(file); // Set disposition and send it.
