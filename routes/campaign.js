@@ -322,138 +322,138 @@ exports.rvm = async (req, res) => {
 
   }
 
-  // MAKE FAILED 
-  const _record = await failedResponse(data);
-  res.contentType('application/json');
-  res.status(500).json(_record);
-  return;
+  // // MAKE FAILED 
+  // const _record = await failedResponse(data);
+  // res.contentType('application/json');
+  // res.status(500).json(_record);
+  // return;
 
 
-  // if (data.carrier === 'INVALID CARRIER') {
-  //   const _record = await failedResponse(data);
-  //   res.contentType('application/json');
-  //   res.status(500).json(_record);
-  //   return;
-  // } else {
-  //   /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
-  //   //#region OUBOUND DATA
-  //   // const totalValues = await db.collection('outbound').find().toArray();
-  //   let insertable = 'outbound';
-  //   // if (totalValues.length >= config.outboundDataCount) {
-  //   //   insertable = 'outbound_waiting';
-  //   // }
-  //   let _newData = {};
-  //   try {
-  //     let resp = null;
-  //     _newData.SentToAsterisk = false;
-  //     _newData.ReceivedResponse = false;
-  //     _newData.DateAdded = moment().valueOf();
-  //     _newData.DateModified = moment().valueOf();
-  //     if (data.missed_call && (data.missed_call === 'TRUE' || data.missed_call === 'T')) {
-  //       _newData.SendMissedCall = true;
-  //     } else if (typeof data.missed_call !== 'boolean') {
-  //       _newData.SendMissedCall = true;
-  //     }
-  //     if (data.missed_call) {
-  //       _newData.SendMissedCall = true;
-  //     }
-  //     if (data.lead_phone.length > 10) {
-  //       _newData.PhoneTo = data.lead_phone.slice(1);
-  //     } else if (data.lead_phone.length === 10) {
-  //       _newData.PhoneTo = data.lead_phone;
-  //     }
-  //     if (data.phone_from) {
-  //       if (data.phone_from.toString().length > 10) {
-  //         _newData.PhoneFrom = data.phone_from.slice(1);
-  //       } else if (data.phone_from.length === 10) {
-  //         _newData.PhoneFrom = data.phone_from;
-  //       }
-  //     } else {
-  //       if (data.missed_call_caller_id) {
-  //         if (data.missed_call_caller_id.toString().length > 10) {
-  //           _newData.PhoneFrom = data.missed_call_caller_id.slice(1);
-  //         } else if (data.missed_call_caller_id.length === 10) {
-  //           _newData.PhoneFrom = data.missed_call_caller_id;
-  //         }
-  //       }
-  //     }
-  //     if (_newData.SendMissedCall && data.missed_call_caller_id && data.missed_call_caller_id.toString().length > 1) {
-  //       _newData.MissedCallFrom = data.missed_call_caller_id;
-  //     } else if (_newData.SendMissedCall) {
-  //       _newData.MissedCallFrom = '2542636150';
-  //     }
-  //     _newData.Carrier = data.carrier;
-  //     _newData.VMAudio = data.audio_url;
-  //     _newData.Provider = data.provider || 'telnyx';
-  //     _newData.Retry = data.retry || 1;
-  //     _newData.DropId = Date.now() + '_' + uuidv4();
-  //     _newData.uuid = uuidv4();
-  //     _newData.CampaignId = data.external_id1;
-  //     _newData.DropId = Date.now() + '_' + uuidv4(); //Math.floor(100000000 + Math.random() * 900000000);
-  //     _newData.uuid = uuidv4();
-  //     _newData.external_id1 = data.external_id1;
-  //     _newData.external_id2 = data.external_id2;
-  //     _newData.external_id3 = data.external_id3;
-  //     _newData.external_id4 = data.external_id4;
-  //     _newData.missed_call_pool = data.missed_call_pool;
-  //     _newData.drop_method = data.drop_method;
-  //     _newData.callback_url = data.callback_url;
-  //     _newData.forward = data.forward;
-  //     //extra params
-  //     _newData.carrier_raw = data.carrier_raw;
-  //     _newData.number_type = data.number_type;
-  //     //checking for areacode DID number to give missed
-  //     if (_newData.SendMissedCall && _newData.PhoneTo && _newData.PhoneTo.toString().length > 1) {
-  //       const areaCode = _newData.PhoneTo.toString().substring(0, 3);
-  //       const phxref = await db.collection('phonexref').findOne({ carrier: 'TELNYX_IVR', xref: areaCode });
-  //       if (phxref && phxref.phone) {
-  //         _newData.MissedCallFrom = phxref.phone;
-  //       }
-  //     }
+  if (data.carrier === 'INVALID CARRIER') {
+    const _record = await failedResponse(data);
+    res.contentType('application/json');
+    res.status(500).json(_record);
+    return;
+  } else {
+    /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
+    //#region OUBOUND DATA
+    // const totalValues = await db.collection('outbound').find().toArray();
+    let insertable = 'outbound';
+    // if (totalValues.length >= config.outboundDataCount) {
+    //   insertable = 'outbound_waiting';
+    // }
+    let _newData = {};
+    try {
+      let resp = null;
+      _newData.SentToAsterisk = false;
+      _newData.ReceivedResponse = false;
+      _newData.DateAdded = moment().valueOf();
+      _newData.DateModified = moment().valueOf();
+      if (data.missed_call && (data.missed_call === 'TRUE' || data.missed_call === 'T')) {
+        _newData.SendMissedCall = true;
+      } else if (typeof data.missed_call !== 'boolean') {
+        _newData.SendMissedCall = true;
+      }
+      if (data.missed_call) {
+        _newData.SendMissedCall = true;
+      }
+      if (data.lead_phone.length > 10) {
+        _newData.PhoneTo = data.lead_phone.slice(1);
+      } else if (data.lead_phone.length === 10) {
+        _newData.PhoneTo = data.lead_phone;
+      }
+      if (data.phone_from) {
+        if (data.phone_from.toString().length > 10) {
+          _newData.PhoneFrom = data.phone_from.slice(1);
+        } else if (data.phone_from.length === 10) {
+          _newData.PhoneFrom = data.phone_from;
+        }
+      } else {
+        if (data.missed_call_caller_id) {
+          if (data.missed_call_caller_id.toString().length > 10) {
+            _newData.PhoneFrom = data.missed_call_caller_id.slice(1);
+          } else if (data.missed_call_caller_id.length === 10) {
+            _newData.PhoneFrom = data.missed_call_caller_id;
+          }
+        }
+      }
+      if (_newData.SendMissedCall && data.missed_call_caller_id && data.missed_call_caller_id.toString().length > 1) {
+        _newData.MissedCallFrom = data.missed_call_caller_id;
+      } else if (_newData.SendMissedCall) {
+        _newData.MissedCallFrom = '2542636150';
+      }
+      _newData.Carrier = data.carrier;
+      _newData.VMAudio = data.audio_url;
+      _newData.Provider = data.provider || 'telnyx';
+      _newData.Retry = data.retry || 1;
+      _newData.DropId = Date.now() + '_' + uuidv4();
+      _newData.uuid = uuidv4();
+      _newData.CampaignId = data.external_id1;
+      _newData.DropId = Date.now() + '_' + uuidv4(); //Math.floor(100000000 + Math.random() * 900000000);
+      _newData.uuid = uuidv4();
+      _newData.external_id1 = data.external_id1;
+      _newData.external_id2 = data.external_id2;
+      _newData.external_id3 = data.external_id3;
+      _newData.external_id4 = data.external_id4;
+      _newData.missed_call_pool = data.missed_call_pool;
+      _newData.drop_method = data.drop_method;
+      _newData.callback_url = data.callback_url;
+      _newData.forward = data.forward;
+      //extra params
+      _newData.carrier_raw = data.carrier_raw;
+      _newData.number_type = data.number_type;
+      //checking for areacode DID number to give missed
+      if (_newData.SendMissedCall && _newData.PhoneTo && _newData.PhoneTo.toString().length > 1) {
+        const areaCode = _newData.PhoneTo.toString().substring(0, 3);
+        const phxref = await db.collection('phonexref').findOne({ carrier: 'TELNYX_IVR', xref: areaCode });
+        if (phxref && phxref.phone) {
+          _newData.MissedCallFrom = phxref.phone;
+        }
+      }
 
-  //     // const rec = await db.collection(insertable).findOne({ DropId: _newData.DropId });
-  //     // if (rec) {
-  //     //   resp = await db.collection(insertable).replaceOne({ _id: rec._id }, _newData);
-  //     // } else {
-  //     //   resp = await db.collection(insertable).insertOne(_newData);
-  //     // }
-     
-  //     await db.collection(insertable).insertOne(_newData);
-  //     _newData.message = 'saved_record';
-  //     // return true;
-  //   } catch (err) {
-  //     _newData.isError = true;
-  //     _newData.message = err.message;
-  //   }
+      // const rec = await db.collection(insertable).findOne({ DropId: _newData.DropId });
+      // if (rec) {
+      //   resp = await db.collection(insertable).replaceOne({ _id: rec._id }, _newData);
+      // } else {
+      //   resp = await db.collection(insertable).insertOne(_newData);
+      // }
+
+      await db.collection(insertable).insertOne(_newData);
+      _newData.message = 'saved_record';
+      // return true;
+    } catch (err) {
+      _newData.isError = true;
+      _newData.message = err.message;
+    }
 
 
 
-  //   if (_newData.isError) {
-  //     res.contentType('application/json');
-  //     res.status(500).json({
-  //       id: x.DropId,
-  //       uuid: x.uuid,
-  //       status: _newData.isError ? 'failed' : 'success',
-  //       carrier: _newData.Carrier,
-  //       message: _newData.message,
-  //       carrier_raw: _newData.carrier_raw,
-  //       number_type: _newData.number_type
-  //     });
-  //     return;
-  //   } else {
-  //     res.contentType('application/json');
-  //     res.status(200).json({
-  //       id: _newData.DropId,
-  //       uuid: _newData.uuid,
-  //       status: _newData.isError ? 'failed' : 'success',
-  //       carrier: _newData.Carrier,
-  //       message: _newData.message,
-  //       carrier_raw: _newData.carrier_raw,
-  //       number_type: _newData.number_type
-  //     });
-  //     return;
-  //   }
-  // }
+    if (_newData.isError) {
+      res.contentType('application/json');
+      res.status(500).json({
+        id: x.DropId,
+        uuid: x.uuid,
+        status: _newData.isError ? 'failed' : 'success',
+        carrier: _newData.Carrier,
+        message: _newData.message,
+        carrier_raw: _newData.carrier_raw,
+        number_type: _newData.number_type
+      });
+      return;
+    } else {
+      res.contentType('application/json');
+      res.status(200).json({
+        id: _newData.DropId,
+        uuid: _newData.uuid,
+        status: _newData.isError ? 'failed' : 'success',
+        carrier: _newData.Carrier,
+        message: _newData.message,
+        carrier_raw: _newData.carrier_raw,
+        number_type: _newData.number_type
+      });
+      return;
+    }
+  }
 
 }
 
