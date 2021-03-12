@@ -22,7 +22,7 @@ exports.TELNYX_TOKEN = "KEY017428C01D4C703E58AE8E6605CB258C_djaPqOCFKcTrm49ROfo5
 exports.VMDROP_URL = "http://159.203.146.215:50001/rvm";
 //exports.ASTERISKSERVER_URL = "http://157.245.219.158:8400/api/sendVM/";
 
-
+exports.outboundData = 35000;
 exports.TRUERINGLESS_URL = 'http://localhost:8400/api/';
 exports.ASTERISKSERVER_URL = "http://localhost:8400/api/sendVM/";
 exports.ASTERISKSERVER_URL_MULTIPLE = "http://localhost:8400/api/sendVM/multiple"

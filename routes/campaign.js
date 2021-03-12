@@ -15,7 +15,7 @@ const unlinkAsync = promisify(fs.unlink);
 const { MYSQLDB } = require('../global/constants');
 const http = require('http'); // or 'https' for https:// URLs
 const https = require('https');
-const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, RinglessDB, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
+const { outboundData, PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, RinglessDB, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 
 const storage = multer.diskStorage({
   destination: constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH,
@@ -337,11 +337,11 @@ exports.rvm = async (req, res) => {
   } else {
     /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
     //#region OUBOUND DATA
-    // const totalValues = await db.collection('outbound').find().toArray();
+    const totalValues = await db.collection('outbound').find().toArray();
     let insertable = 'outbound';
-    // if (totalValues.length >= config.outboundDataCount) {
-    //   insertable = 'outbound_waiting';
-    // }
+    if (totalValues.length >= outboundData) {
+      insertable = 'outbound_waiting';
+    }
     let _newData = {};
     try {
       let resp = null;
