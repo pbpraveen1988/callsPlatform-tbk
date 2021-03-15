@@ -463,8 +463,6 @@ exports.rvm = async (req, res) => {
 // GET CARRIER  INFORMATION FROM THE TABLE
 const getCarriers = async (numbers) => {
   return new Promise(function (resolve, reject) {
-    console.time('API_SQL_DATA');
-    console.log('API CALLING SP');
     // const query = `SELECT s.name AS 'CarrierName', s.carrier_type , l.TN AS 'Number',l.LRN AS 'XREF' FROM service_providers s INNER JOIN lrn_data l ON  s.SPID = l.SPID WHERE  l.TN IN (${_inArray})`;
     let paramString = '';
     numbers && numbers.forEach((x, index) => {
@@ -526,9 +524,6 @@ const getCarriers = async (numbers) => {
           }
         }
       }
-
-
-      console.timeEnd('API_SQL_DATA');
       resolve(_results);
     });
   })

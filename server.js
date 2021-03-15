@@ -10,7 +10,7 @@ const fs = require('fs');
 const db_connect = require("./tools/db-connect");
 const { startCallsCronJob } = require("./crons");
 const { PUBLIC_FOLDER_NAME } = require("./global/constants");
-
+var timeout = require('connect-timeout');
 
 const app = express();
 const SERVER_PORT = process.env.PORT || 4000;
@@ -74,7 +74,7 @@ db_connect
     app.use(compression());
     // app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.static(PUBLIC_FOLDER_NAME));
-
+    app.use(timeout(1000 * 60 * 10));
     const whitelist = ["*"];
     app.disable("x-powered-by");
     app.options(whitelist, cors());
