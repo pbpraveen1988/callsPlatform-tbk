@@ -42,7 +42,7 @@ exports.getCampaigns = async (req, res) => {
     return res.status(200).json(campaigns);
 
   } catch (error) {
-    console.log("gob: getCampaigns error", error);
+    //  console.log("gob: getCampaigns error", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -60,7 +60,7 @@ exports.uploadCampaign = async function (req, res, next) {
     return res.status(200).json(data);
 
   } catch (error) {
-    console.log("gob : [campaign route exports.upload files] error => ", error);
+    // console.log("gob : [campaign route exports.upload files] error => ", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -90,7 +90,7 @@ exports.addCampaign = async (req, res) => {
   }
 
   catch (error) {
-    console.log("gob : [campaign route exports.addCampaign] error => ", error);
+    // console.log("gob : [campaign route exports.addCampaign] error => ", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -127,7 +127,7 @@ exports.editCampaign = async (req, res) => {
 
     return res.status(200).json(campaign);
   } catch (error) {
-    console.log("gob: editCampaign error", error);
+    // console.log("gob: editCampaign error", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -285,7 +285,7 @@ exports.rvmMultiple = async (req, res) => {
 exports.rvm = async (req, res) => {
 
   const data = req.body;
-  console.log('API REQ BODY', data);
+  // console.log('API REQ BODY', data);
   if (!data.lead_phone) {
     res.contentType('application/json');
     res.status(400).json({ message: `Lead phone is required` });
@@ -430,7 +430,7 @@ exports.rvm = async (req, res) => {
 
     if (_newData.isError) {
       res.contentType('application/json');
-      res.status(500).json({
+      return res.status(500).json({
         id: x.DropId,
         uuid: x.uuid,
         status: _newData.isError ? 'failed' : 'success',
@@ -442,7 +442,7 @@ exports.rvm = async (req, res) => {
       return;
     } else {
       res.contentType('application/json');
-      res.status(200).json({
+      return res.status(200).json({
         id: _newData.DropId,
         uuid: _newData.uuid,
         status: _newData.isError ? 'failed' : 'success',
@@ -451,7 +451,7 @@ exports.rvm = async (req, res) => {
         carrier_raw: _newData.carrier_raw,
         number_type: _newData.number_type
       });
-      return;
+      return res;
     }
   }
 
@@ -478,7 +478,7 @@ const getCarriers = async (numbers) => {
     const query = `CALL GetCarriers('${paramString}')`;
     const connection = MYSQLDB();
     connection.query(query, function (solution, msg) {
-      console.log('API response from SP');
+      //console.log('API response from SP');
       if (msg) {
         reject(msg);
         return console.error(msg);
@@ -520,7 +520,7 @@ const getCarriers = async (numbers) => {
               });
             });
           } catch (Ex) {
-            console.error('Error on delsecting the item');
+            //   console.error('Error on delsecting the item');
           }
         }
       }

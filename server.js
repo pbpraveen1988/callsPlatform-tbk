@@ -74,7 +74,7 @@ db_connect
     app.use(compression());
     // app.use(express.static(path.join(__dirname, 'public')));
     app.use(express.static(PUBLIC_FOLDER_NAME));
-    app.use(timeout(1000 * 60 * 10));
+    app.use(timeout(1000 * 60 * 60));
     const whitelist = ["*"];
     app.disable("x-powered-by");
     app.options(whitelist, cors());
