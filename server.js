@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const passport = require("passport");
+const morgan = require("morgan");
 const dotenv = require("dotenv");
 const compression = require("compression");
 const path = require('path');
@@ -11,7 +12,6 @@ const db_connect = require("./tools/db-connect");
 const { startCallsCronJob } = require("./crons");
 const { PUBLIC_FOLDER_NAME } = require("./global/constants");
 var timeout = require('connect-timeout');
-
 const app = express();
 const SERVER_PORT = process.env.PORT || 4000;
 
@@ -66,8 +66,13 @@ db_connect
     // bodyParser, parses the request body to be a readable json format
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json({ limit: "50mb" }));
-    // app.use(logger("dev"));
+    app.use(morgan("dev"));
 
+    app.use((req, res, next) => {
+      console.log(req.body);
+      console.log(req.url, res.statusCode);
+      next()
+    })
 
 
 
@@ -92,8 +97,12 @@ db_connect
       res.download(file); // Set disposition and send it.
     });
 
+    app.get('/alllogs/:id', function (req, res) {
+      const file = `${__dirname}/express/express.log.${req.params.id}.gz`;
+      res.download(file); // Set disposition and send it.
+    });
 
-    
+
     app.get('/ccfuel-logs-download', function (req, res) {
       const file = `${__dirname}/public/debug.log`;
       res.download(file); // Set disposition and send it.

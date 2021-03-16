@@ -285,15 +285,14 @@ exports.rvmMultiple = async (req, res) => {
 exports.rvm = async (req, res) => {
 
   const data = req.body;
-  // console.log('API REQ BODY', data);
   if (!data.lead_phone) {
     res.contentType('application/json');
-    res.status(400).json({ message: `Lead phone is required` });
+    return res.status(400).json({ message: `Lead phone is required` });
     return;
   }
   if (!data.audio_url) {
     res.contentType('application/json');
-    res.status(400).json({ message: `audio_url is required` });
+    return res.status(400).json({ message: `audio_url is required` });
     return;
   }
 
@@ -332,16 +331,14 @@ exports.rvm = async (req, res) => {
   if (data.carrier === 'INVALID CARRIER') {
     const _record = await failedResponse(data);
     res.contentType('application/json');
-    res.status(500).json(_record);
-    return;
+    return res.status(500).json(_record);
+
   } else {
     /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
     //#region OUBOUND DATA
-    const totalValues = await db.collection('outbound').find().toArray();
-    let insertable = 'outbound';
-    if (totalValues.length >= outboundData) {
-      insertable = 'outbound_waiting';
-    }
+
+    let insertable = 'outbound_waiting';
+
     let _newData = {};
     try {
       let resp = null;
@@ -410,14 +407,6 @@ exports.rvm = async (req, res) => {
           _newData.MissedCallFrom = phxref.phone;
         }
       }
-
-      // const rec = await db.collection(insertable).findOne({ DropId: _newData.DropId });
-      // if (rec) {
-      //   resp = await db.collection(insertable).replaceOne({ _id: rec._id }, _newData);
-      // } else {
-      //   resp = await db.collection(insertable).insertOne(_newData);
-      // }
-
       await db.collection(insertable).insertOne(_newData);
       _newData.message = 'saved_record';
       // return true;
@@ -426,11 +415,8 @@ exports.rvm = async (req, res) => {
       _newData.message = err.message;
     }
 
-
-
     if (_newData.isError) {
-      res.contentType('application/json');
-      return res.status(500).json({
+      return res.contentType('application/json').status(500).json({
         id: x.DropId,
         uuid: x.uuid,
         status: _newData.isError ? 'failed' : 'success',
@@ -441,8 +427,7 @@ exports.rvm = async (req, res) => {
       });
       return;
     } else {
-      res.contentType('application/json');
-      return res.status(200).json({
+      return res.contentType('application/json').status(200).json({
         id: _newData.DropId,
         uuid: _newData.uuid,
         status: _newData.isError ? 'failed' : 'success',
@@ -451,7 +436,6 @@ exports.rvm = async (req, res) => {
         carrier_raw: _newData.carrier_raw,
         number_type: _newData.number_type
       });
-      return res;
     }
   }
 
