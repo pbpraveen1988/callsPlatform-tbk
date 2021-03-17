@@ -309,8 +309,8 @@ exports.rvm = async (req, res) => {
       data.number_type = 'cell';
     }
   } catch (ex) {
-    data.carrier = 'VERIZON';
-    data.carrier_raw = 'VERIZON';
+    data.carrier = 'INVALID CARRIER';
+    data.carrier_raw = 'INVALID CARRIER';
     data.number_type = 'cell';
   }
   try {
@@ -474,7 +474,7 @@ const getCarriers = async (numbers) => {
         if (res.CarrierName) {
           _carrierName = getCarrierName(res.CarrierName);
         } else {
-          _carrierName = 'VERIZON';
+          _carrierName = 'UNSUPPORTED CARRIER';
         }
         const number_type = getServiceProviderType(res.sp_type);
         _results.push({
@@ -494,7 +494,7 @@ const getCarriers = async (numbers) => {
               if (res.CarrierName) {
                 _carrierName = getCarrierName(res.CarrierName);
               } else {
-                _carrierName = 'VERIZON';
+                _carrierName = 'UNSUPPORTED CARRIER';
               }
               const number_type = getServiceProviderType(res.sp_type);
               _results.push({
@@ -528,7 +528,7 @@ const findDeselectedItem = (CurrentArray, PreviousArray) => {
 
 const getCarrierName = (carrierName) => {
   if (!carrierName) {
-    return 'VERIZON'; // by default setting as verizon.
+    return 'UNSUPPORTED CARRIER'
   }
 
   if (carrierName.toString().toUpperCase().includes('CINGULAR')) {
@@ -540,7 +540,8 @@ const getCarrierName = (carrierName) => {
   if (carrierName.toString().toUpperCase().includes('VERIZON')) {
     return 'VERIZON'
   }
-  return 'VERIZON';
+
+  return 'UNSUPPORTED CARRIER';
 
 }
 

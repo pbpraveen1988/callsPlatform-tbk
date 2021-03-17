@@ -77,11 +77,11 @@ exports.DBConnectMongoose = function () {
     const mongo_rm = "mongodb://127.0.0.1:27017/RinglessVM";
     const mongoDB = "RinglessVM";
     mongoose
-      .connect(mongo_uri, { useNewUrlParser: true, useFindAndModify: false, poolSize: 10 })
+      .connect(mongo_uri, { useNewUrlParser: true, useFindAndModify: false, poolSize: 5000 })
       .then(async () => {
         db = mongoose.connection;
         console.log("mongo connection created");
-        const _conn = await MongoClient.connect(mongo_rm, { useNewUrlParser: true, poolSize: 10 });
+        const _conn = await MongoClient.connect(mongo_rm, { useNewUrlParser: true, poolSize: 5000 });
         _db = _conn.db(mongoDB);
         console.log("Ringless connection created");
         RinglessDB(_db);
