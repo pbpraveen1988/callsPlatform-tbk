@@ -645,14 +645,28 @@ const failedResponse = async (data) => {
 
   const _dbCon = RinglessDB();
   const _newData = await _dbCon.collection('responses').insertOne(_record);
+
   return {
-    id: _record.DropId,
-    uuid: _record.uuid,
-    status: 'failed',
-    carrier: __carrier,
-    message: _record.ErrorMessage,
-    carrier_raw: _record.carrier_raw,
-  };
+    "Error": 'unsupported carrier',
+    "details": {
+      "number": _record.PhoneTo,
+      "status": "Failed",
+      "carrier": __carrier,
+      "message": "unsupported carrier",
+      "carrier_raw": _record.carrier_raw,
+      "number_type": _record.number_type
+    }
+  }
+
+
+  // return {
+  //   id: _record.DropId,
+  //   uuid: _record.uuid,
+  //   status: 'failed',
+  //   carrier: __carrier,
+  //   message: _record.ErrorMessage,
+  //   carrier_raw: _record.carrier_raw,
+  // };
 }
 
 
