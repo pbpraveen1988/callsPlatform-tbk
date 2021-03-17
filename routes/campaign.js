@@ -295,7 +295,7 @@ exports.rvm = async (req, res) => {
     return res.status(400).json({ message: `audio_url is required` });
     return;
   }
-  
+
 
   let number;
   try {
@@ -328,12 +328,20 @@ exports.rvm = async (req, res) => {
   // res.status(500).json(_record);
   // return;
 
+  let isFailedCarrier = false;
 
-  if (data.carrier === 'INVALID CARRIER') {
+  if (getCarrierName(data.carrier) == 'INVALID CARRIER' ||
+    (getCarrierName(data.carrier) != 'VERIZON' &&
+      getCarrierName(data.carrier) != 'T-MOBILE' &&
+      getCarrierName(data.carrier) != 'CINGULAR'
+    )) {
+    isFailedCarrier = true;
+  }
+
+  if (isFailedCarrier) {
     const _record = await failedResponse(data);
     res.contentType('application/json');
     return res.status(500).json(_record);
-
   } else {
     /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
     //#region OUBOUND DATA
@@ -352,7 +360,7 @@ exports.rvm = async (req, res) => {
       } else if (typeof data.missed_call !== 'boolean') {
         _newData.SendMissedCall = true;
       }
-      if (data.missed_call) {
+      if (data.missed_call || data.drop_method === 'both') {
         _newData.SendMissedCall = true;
       }
       if (data.lead_phone.length > 10) {
@@ -394,7 +402,7 @@ exports.rvm = async (req, res) => {
       _newData.external_id3 = data.external_id3;
       _newData.external_id4 = data.external_id4;
       _newData.missed_call_pool = data.missed_call_pool;
-      _newData.drop_method = data.drop_method;
+      _newData.drop_method = data.drop_method == 'both' ? 'ringless' : data.drop_method;
       _newData.callback_url = data.callback_url;
       _newData.forward = data.forward;
       //extra params
@@ -416,12 +424,24 @@ exports.rvm = async (req, res) => {
       _newData.message = err.message;
     }
 
+    let __carrier = '';
+    if (_newData.Carrier === 'T-MOBILE') {
+      __carrier = 'tmobile';
+    } else if (_newData.Carrier == 'CINGULAR') {
+      __carrier = 'att';
+    } else if (_newData.Carrier == 'VERIZON') {
+      __carrier = 'verizon'
+    } else {
+      __carrier = 'unsupported ' + _newData.number_type;
+    }
+
     if (_newData.isError) {
+
       return res.contentType('application/json').status(500).json({
         id: x.DropId,
         uuid: x.uuid,
         status: _newData.isError ? 'failed' : 'success',
-        carrier: _newData.Carrier,
+        carrier: __carrier,
         message: _newData.message,
         carrier_raw: _newData.carrier_raw,
         number_type: _newData.number_type
@@ -432,7 +452,7 @@ exports.rvm = async (req, res) => {
         id: _newData.DropId,
         uuid: _newData.uuid,
         status: _newData.isError ? 'failed' : 'success',
-        carrier: _newData.Carrier,
+        carrier: __carrier,
         message: _newData.message,
         carrier_raw: _newData.carrier_raw,
         number_type: _newData.number_type
@@ -475,7 +495,7 @@ const getCarriers = async (numbers) => {
         if (res.CarrierName) {
           _carrierName = getCarrierName(res.CarrierName);
         } else {
-          _carrierName = 'UNSUPPORTED CARRIER';
+          _carrierName = 'INVALID CARRIER';
         }
         const number_type = getServiceProviderType(res.sp_type);
         _results.push({
@@ -495,7 +515,7 @@ const getCarriers = async (numbers) => {
               if (res.CarrierName) {
                 _carrierName = getCarrierName(res.CarrierName);
               } else {
-                _carrierName = 'UNSUPPORTED CARRIER';
+                _carrierName = 'INVALID CARRIER';
               }
               const number_type = getServiceProviderType(res.sp_type);
               _results.push({
@@ -529,7 +549,7 @@ const findDeselectedItem = (CurrentArray, PreviousArray) => {
 
 const getCarrierName = (carrierName) => {
   if (!carrierName) {
-    return 'UNSUPPORTED CARRIER'
+    return 'INVALID CARRIER'
   }
 
   if (carrierName.toString().toUpperCase().includes('CINGULAR')) {
@@ -542,7 +562,7 @@ const getCarrierName = (carrierName) => {
     return 'VERIZON'
   }
 
-  return 'UNSUPPORTED CARRIER';
+  return carrierName;
 
 }
 
@@ -563,7 +583,7 @@ const getServiceProviderType = (service_provider_type) => {
 
 
 const failedResponse = async (data) => {
-  const _record = {
+  let _record = {
     CallId: uuidv4(),
     DropId: uuidv4(),
     PhoneTo: data.lead_phone,
@@ -571,7 +591,7 @@ const failedResponse = async (data) => {
     CallStatus: 'failed',
     MissedCallFrom: data.missed_call_caller_id,
     DateAddedToQueue: moment().valueOf(),
-    Carrier: 'UNSUPPORTED CARRIER',
+    Carrier: data.carrier,
     Provider: 'telnyx',
     ChannelCreatedTime: moment().valueOf(),
     CallStartTime: moment().valueOf(),
@@ -580,7 +600,6 @@ const failedResponse = async (data) => {
     PlaybackEndedTime: moment().valueOf(),
     CallEndedTime: moment().valueOf(),
     IsError: true,
-    ErrorMessage: 'The Carrier Listed Is Not Supported By This Module',
     DateCreated: moment().valueOf(),
     StartDate: moment().valueOf(),
     EndDate: moment().valueOf(),
@@ -596,19 +615,41 @@ const failedResponse = async (data) => {
     external_id1: data.external_id1,
     external_id3: data.external_id3,
     external_id4: data.external_id4,
-    number_type: '',
+    number_type: data.number_type,
     callback_url: data.callback_url,
     drop_method: data.drop_method,
-    carrier_raw: 'UNSUPPORTED CARRIER',
+    carrier_raw: data.carrier_raw,
     forward: data.forward
   }
+
+  let __carrier = '';
+  if (data.Carrier === 'T-MOBILE') {
+    __carrier = 'tmobile';
+  } else if (data.Carrier == 'CINGULAR') {
+    __carrier = 'att';
+  } else if (data.Carrier == 'VERIZON') {
+    __carrier = 'verizon'
+  } else {
+    __carrier = 'unsupported carrier';
+  }
+
+  if (data.number_type === 'cell') {
+    _record.ErrorMessage = 'unsupported cell';
+  } else if (data.number_type === 'landline') {
+    _record.ErrorMessage = 'home phone';
+  } else {
+    _record.ErrorMessage = 'unsupported ' + data.number_type;
+  }
+
+
+
   const _dbCon = RinglessDB();
   const _newData = await _dbCon.collection('responses').insertOne(_record);
   return {
     id: _record.DropId,
     uuid: _record.uuid,
     status: 'failed',
-    carrier: _record.Carrier,
+    carrier: __carrier,
     message: _record.ErrorMessage,
     carrier_raw: _record.carrier_raw,
   };
