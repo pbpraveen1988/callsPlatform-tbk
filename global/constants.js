@@ -2,6 +2,7 @@ exports.LOCAL_URL = "http://localhost:3002";
 exports.LOCAL_CALLBACK_URL = 'http://localhost:3012';
 exports.CALLBACK_URL = "http://157.245.219.158:3012"
 exports.PROD_URL = "http://157.245.219.158:3002";
+exports.PROD_URL_CLIENT = "http://138.68.245.156:4000";
 exports.EXPIRE_TIME_LONG = "48h";
 exports.EXPIRE_TIME_SHORT = "48h";
 exports.LOGOUT_EVENT = "logout";
@@ -21,7 +22,7 @@ exports.TELNYX_TOKEN = "KEY017428C01D4C703E58AE8E6605CB258C_djaPqOCFKcTrm49ROfo5
 exports.VMDROP_URL = "http://159.203.146.215:50001/rvm";
 //exports.ASTERISKSERVER_URL = "http://157.245.219.158:8400/api/sendVM/";
 
-
+exports.outboundData = 35000;
 exports.TRUERINGLESS_URL = 'http://localhost:8400/api/';
 exports.ASTERISKSERVER_URL = "http://localhost:8400/api/sendVM/";
 exports.ASTERISKSERVER_URL_MULTIPLE = "http://localhost:8400/api/sendVM/multiple"

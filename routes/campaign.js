@@ -13,7 +13,9 @@ const { sync } = require('mkdirp');
 const { default: axios } = require('axios');
 const unlinkAsync = promisify(fs.unlink);
 const { MYSQLDB } = require('../global/constants');
-const { PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, RinglessDB, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
+const http = require('http'); // or 'https' for https:// URLs
+const https = require('https');
+const { outboundData, PUBLIC_FOLDER_NAME, ASSET_FOLDER_PATH, RinglessDB, VMDROP_URL, MISSED_CALL_NUMBER, ASTERISKSERVER_URL, API_KEY, TELNYX_TOKEN, TELNYX_URL, LOCAL_URL, PROD_URL, CALLBACK_PATH, AUDIO_FOLDER_PATH, ASTERISKSERVER_URL_MULTIPLE } = require('../global/constants');
 
 const storage = multer.diskStorage({
   destination: constants.PUBLIC_FOLDER_NAME + constants.ASSET_FOLDER_PATH,
@@ -21,7 +23,7 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + utils.generateRandomId() + path.extname(file.originalname));
   }
 });
-
+const db = RinglessDB();
 const CSV_FILE_FIELD = "csv-file";
 const AUDIO_FILE_FIELD = "audio-file";
 
@@ -40,7 +42,7 @@ exports.getCampaigns = async (req, res) => {
     return res.status(200).json(campaigns);
 
   } catch (error) {
-    console.log("gob: getCampaigns error", error);
+    //  console.log("gob: getCampaigns error", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -58,7 +60,7 @@ exports.uploadCampaign = async function (req, res, next) {
     return res.status(200).json(data);
 
   } catch (error) {
-    console.log("gob : [campaign route exports.upload files] error => ", error);
+    // console.log("gob : [campaign route exports.upload files] error => ", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -88,7 +90,7 @@ exports.addCampaign = async (req, res) => {
   }
 
   catch (error) {
-    console.log("gob : [campaign route exports.addCampaign] error => ", error);
+    // console.log("gob : [campaign route exports.addCampaign] error => ", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -125,7 +127,7 @@ exports.editCampaign = async (req, res) => {
 
     return res.status(200).json(campaign);
   } catch (error) {
-    console.log("gob: editCampaign error", error);
+    // console.log("gob: editCampaign error", error);
     return res.status(500).json({
       message: message.SOMETHING_WENT_WRONG,
       error,
@@ -234,8 +236,8 @@ exports.rvmMultiple = async (req, res) => {
         record.number_type = 'cell';
       }
       try {
-        if (body.external_id2) {
-          utils.getCampaignLog(body.external_id2, 'VMDROP PARAMS via API', record);
+        if (body.external_id1) {
+          utils.getCampaignLog(body.external_id1, 'VMDROP PARAMS via API', record);
         }
       } catch (e) {
       }
@@ -282,51 +284,35 @@ exports.rvmMultiple = async (req, res) => {
 
 exports.rvm = async (req, res) => {
 
-  const body = req.body;
-  console.log('API REQ BODY', body);
-  if (!body.lead_phone) {
+  const data = req.body;
+  if (!data.lead_phone) {
     res.contentType('application/json');
-    res.status(400).json({ message: `Lead phone is required` });
+    return res.status(400).json({ message: `Lead phone is required` });
     return;
   }
-  if (!body.audio_url) {
+  if (!data.audio_url) {
     res.contentType('application/json');
-    res.status(400).json({ message: `audio_url is required` });
+    return res.status(400).json({ message: `audio_url is required` });
     return;
   }
-  const record = {
-    audio_url: body.audio_url,
-    lead_phone: body.lead_phone,
-    callback_url: body.callback_url,
-    external_id1: body.external_id2,
-    external_id2: body.external_id1,
-    external_id3: body.external_id3,
-    external_id4: body.external_id4,
-    forward: body.forward,
-    drop_method: body.drop_method,
-    missed_call_caller_id: body.missed_call_caller_id,
-    missed_call_pool: body.missed_call_pool,
-    missed_call: body.missed_call,
-    provider: 'telnyx',
-    retry: 1
-  }
+  
 
   let number;
   try {
-    number = await getCarriers([record.lead_phone]);
+    number = await getCarriers([data.lead_phone]);
     if (number && number.length > 0) {
-      record.carrier = number[0].carrier;
-      record.carrier_raw = number[0].carrier_raw;
-      record.number_type = number[0].number_type;
+      data.carrier = number[0].carrier;
+      data.carrier_raw = number[0].carrier_raw;
+      data.number_type = number[0].number_type;
     } else {
-      record.carrier = 'INVALID CARRIER';
-      record.carrier_raw = 'INVALID CARRIER';
-      record.number_type = 'cell';
+      data.carrier = 'INVALID CARRIER';
+      data.carrier_raw = 'INVALID CARRIER';
+      data.number_type = 'cell';
     }
   } catch (ex) {
-    record.carrier = 'VERIZON';
-    record.carrier_raw = 'VERIZON';
-    record.number_type = 'cell';
+    data.carrier = 'INVALID CARRIER';
+    data.carrier_raw = 'INVALID CARRIER';
+    data.number_type = 'cell';
   }
   try {
     if (body.external_id1) {
@@ -336,27 +322,124 @@ exports.rvm = async (req, res) => {
 
   }
 
-  if (record.carrier === 'INVALID CARRIER') {
-    const _record = await failedResponse(record);
+  // // MAKE FAILED 
+  // const _record = await failedResponse(data);
+  // res.contentType('application/json');
+  // res.status(500).json(_record);
+  // return;
+
+
+  if (data.carrier === 'INVALID CARRIER') {
+    const _record = await failedResponse(data);
     res.contentType('application/json');
-    res.status(500).json(_record);
-    return;
+    return res.status(500).json(_record);
+
   } else {
-    return axios.post(ASTERISKSERVER_URL, record)
-      .then(response => {
-        if (response.data.status === 'failed') {
-          res.contentType('application/json');
-          res.status(500).json(response.data);
-          return response;
+    /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
+    //#region OUBOUND DATA
+
+    let insertable = 'outbound_waiting';
+
+    let _newData = {};
+    try {
+      let resp = null;
+      _newData.SentToAsterisk = false;
+      _newData.ReceivedResponse = false;
+      _newData.DateAdded = moment().valueOf();
+      _newData.DateModified = moment().valueOf();
+      if (data.missed_call && (data.missed_call === 'TRUE' || data.missed_call === 'T')) {
+        _newData.SendMissedCall = true;
+      } else if (typeof data.missed_call !== 'boolean') {
+        _newData.SendMissedCall = true;
+      }
+      if (data.missed_call) {
+        _newData.SendMissedCall = true;
+      }
+      if (data.lead_phone.length > 10) {
+        _newData.PhoneTo = data.lead_phone.slice(1);
+      } else if (data.lead_phone.length === 10) {
+        _newData.PhoneTo = data.lead_phone;
+      }
+      if (data.phone_from) {
+        if (data.phone_from.toString().length > 10) {
+          _newData.PhoneFrom = data.phone_from.slice(1);
+        } else if (data.phone_from.length === 10) {
+          _newData.PhoneFrom = data.phone_from;
         }
-        res.contentType('application/json');
-        res.status(200).json(response.data);
-        return response;
-      }).catch(err => {
-        res.contentType('application/json');
-        res.status(500).json(err);
-      })
+      } else {
+        if (data.missed_call_caller_id) {
+          if (data.missed_call_caller_id.toString().length > 10) {
+            _newData.PhoneFrom = data.missed_call_caller_id.slice(1);
+          } else if (data.missed_call_caller_id.length === 10) {
+            _newData.PhoneFrom = data.missed_call_caller_id;
+          }
+        }
+      }
+      if (_newData.SendMissedCall && data.missed_call_caller_id && data.missed_call_caller_id.toString().length > 1) {
+        _newData.MissedCallFrom = data.missed_call_caller_id;
+      } else if (_newData.SendMissedCall) {
+        _newData.MissedCallFrom = '2542636150';
+      }
+      _newData.Carrier = data.carrier;
+      _newData.VMAudio = data.audio_url;
+      _newData.Provider = data.provider || 'telnyx';
+      _newData.Retry = data.retry || 1;
+      _newData.DropId = Date.now() + '_' + uuidv4();
+      _newData.uuid = uuidv4();
+      _newData.CampaignId = data.external_id1;
+      _newData.DropId = Date.now() + '_' + uuidv4(); //Math.floor(100000000 + Math.random() * 900000000);
+      _newData.uuid = uuidv4();
+      _newData.external_id1 = data.external_id1;
+      _newData.external_id2 = data.external_id2;
+      _newData.external_id3 = data.external_id3;
+      _newData.external_id4 = data.external_id4;
+      _newData.missed_call_pool = data.missed_call_pool;
+      _newData.drop_method = data.drop_method;
+      _newData.callback_url = data.callback_url;
+      _newData.forward = data.forward;
+      //extra params
+      _newData.carrier_raw = data.carrier_raw;
+      _newData.number_type = data.number_type;
+      //checking for areacode DID number to give missed
+      if (_newData.SendMissedCall && _newData.PhoneTo && _newData.PhoneTo.toString().length > 1) {
+        const areaCode = _newData.PhoneTo.toString().substring(0, 3);
+        const phxref = await db.collection('phonexref').findOne({ carrier: 'TELNYX_IVR', xref: areaCode });
+        if (phxref && phxref.phone) {
+          _newData.MissedCallFrom = phxref.phone;
+        }
+      }
+      await db.collection(insertable).insertOne(_newData);
+      _newData.message = 'saved_record';
+      // return true;
+    } catch (err) {
+      _newData.isError = true;
+      _newData.message = err.message;
+    }
+
+    if (_newData.isError) {
+      return res.contentType('application/json').status(500).json({
+        id: x.DropId,
+        uuid: x.uuid,
+        status: _newData.isError ? 'failed' : 'success',
+        carrier: _newData.Carrier,
+        message: _newData.message,
+        carrier_raw: _newData.carrier_raw,
+        number_type: _newData.number_type
+      });
+      return;
+    } else {
+      return res.contentType('application/json').status(200).json({
+        id: _newData.DropId,
+        uuid: _newData.uuid,
+        status: _newData.isError ? 'failed' : 'success',
+        carrier: _newData.Carrier,
+        message: _newData.message,
+        carrier_raw: _newData.carrier_raw,
+        number_type: _newData.number_type
+      });
+    }
   }
+
 }
 
 
@@ -365,8 +448,6 @@ exports.rvm = async (req, res) => {
 // GET CARRIER  INFORMATION FROM THE TABLE
 const getCarriers = async (numbers) => {
   return new Promise(function (resolve, reject) {
-    console.time('API_SQL_DATA');
-    console.log('API CALLING SP');
     // const query = `SELECT s.name AS 'CarrierName', s.carrier_type , l.TN AS 'Number',l.LRN AS 'XREF' FROM service_providers s INNER JOIN lrn_data l ON  s.SPID = l.SPID WHERE  l.TN IN (${_inArray})`;
     let paramString = '';
     numbers && numbers.forEach((x, index) => {
@@ -382,7 +463,7 @@ const getCarriers = async (numbers) => {
     const query = `CALL GetCarriers('${paramString}')`;
     const connection = MYSQLDB();
     connection.query(query, function (solution, msg) {
-      console.log('API response from SP');
+      //console.log('API response from SP');
       if (msg) {
         reject(msg);
         return console.error(msg);
@@ -394,7 +475,7 @@ const getCarriers = async (numbers) => {
         if (res.CarrierName) {
           _carrierName = getCarrierName(res.CarrierName);
         } else {
-          _carrierName = 'INVALID CARRIER';
+          _carrierName = 'UNSUPPORTED CARRIER';
         }
         const number_type = getServiceProviderType(res.sp_type);
         _results.push({
@@ -414,7 +495,7 @@ const getCarriers = async (numbers) => {
               if (res.CarrierName) {
                 _carrierName = getCarrierName(res.CarrierName);
               } else {
-                _carrierName = 'INVALID CARRIER';
+                _carrierName = 'UNSUPPORTED CARRIER';
               }
               const number_type = getServiceProviderType(res.sp_type);
               _results.push({
@@ -424,13 +505,10 @@ const getCarriers = async (numbers) => {
               });
             });
           } catch (Ex) {
-            console.error('Error on delsecting the item');
+            //   console.error('Error on delsecting the item');
           }
         }
       }
-
-
-      console.timeEnd('API_SQL_DATA');
       resolve(_results);
     });
   })
@@ -451,7 +529,7 @@ const findDeselectedItem = (CurrentArray, PreviousArray) => {
 
 const getCarrierName = (carrierName) => {
   if (!carrierName) {
-    return 'INVALID CARRIER'; // by default setting as verizon.
+    return 'UNSUPPORTED CARRIER'
   }
 
   if (carrierName.toString().toUpperCase().includes('CINGULAR')) {
@@ -463,7 +541,8 @@ const getCarrierName = (carrierName) => {
   if (carrierName.toString().toUpperCase().includes('VERIZON')) {
     return 'VERIZON'
   }
-  return 'INVALID CARRIER';
+
+  return 'UNSUPPORTED CARRIER';
 
 }
 
@@ -512,7 +591,8 @@ const failedResponse = async (data) => {
     Invalid: false,
     SentToCallback: false,
     uuid: uuidv4(),
-    CampaignId: data.external_id2,
+    CampaignId: data.external_id1,
+    external_id2: data.external_id2,
     external_id1: data.external_id1,
     external_id3: data.external_id3,
     external_id4: data.external_id4,
@@ -533,3 +613,35 @@ const failedResponse = async (data) => {
     carrier_raw: _record.carrier_raw,
   };
 }
+
+
+
+
+var download = function (url, dest, cb) {
+  if (fs.existsSync(dest)) {
+    cb();
+    return;
+  }
+  const file = fs.createWriteStream(dest);
+  if (url.includes('https')) {
+    var request = https.get(url, function (response) {
+      response.pipe(file);
+      file.on('finish', function () {
+        file.close(cb);  // close() is async, call cb after close completes.
+      });
+    }).on('error', function (err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      if (cb) cb(err.message);
+    });
+  } else {
+    var request = http.get(url, function (response) {
+      response.pipe(file);
+      file.on('finish', function () {
+        file.close(cb);  // close() is async, call cb after close completes.
+      });
+    }).on('error', function (err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      if (cb) cb(err.message);
+    });
+  }
+};
