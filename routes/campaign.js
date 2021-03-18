@@ -652,7 +652,7 @@ const failedResponse = async (data) => {
       "number": _record.PhoneTo,
       "status": "Failed",
       "carrier": __carrier,
-      "message": "unsupported carrier",
+      "message": _record.ErrorMessage,
       "carrier_raw": _record.carrier_raw,
       "number_type": _record.number_type
     }
