@@ -438,8 +438,8 @@ exports.rvm = async (req, res) => {
     if (_newData.isError) {
 
       return res.contentType('application/json').status(500).json({
-        id: x.DropId,
-        uuid: x.uuid,
+        id: _newData.DropId,
+        uuid: _newData.uuid,
         status: _newData.isError ? 'failed' : 'success',
         carrier: __carrier,
         message: _newData.message,
