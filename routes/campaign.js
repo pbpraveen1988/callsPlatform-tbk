@@ -644,7 +644,7 @@ const failedResponse = async (data) => {
 
 
   const _dbCon = RinglessDB();
-  const _newData = await _dbCon.collection('responses').insertOne(_record);
+  const _newData = await _dbCon.collection('responses_history').insertOne(_record);
 
   return {
     "Error": 'unsupported carrier',
