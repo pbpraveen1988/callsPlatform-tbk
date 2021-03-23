@@ -315,8 +315,8 @@ exports.rvm = async (req, res) => {
     data.number_type = 'cell';
   }
   try {
-    if (body.external_id1) {
-      utils.getCampaignLog(body.external_id1, 'VMDROP PARAMS via API', record);
+    if (data.external_id1) {
+      utils.getCampaignLog(data.external_id1, 'VMDROP PARAMS via API', data);
     }
   } catch (e) {
 
@@ -341,7 +341,7 @@ exports.rvm = async (req, res) => {
   if (isFailedCarrier) {
     const _record = await failedResponse(data);
     res.contentType('application/json');
-    return res.status(500).json(_record);
+    return res.status(200).json(_record);
   } else {
     /**SAVING TO OUTBOUND FROM HERE ONLY NOT GOING TO SEND TO TVM */
     //#region OUBOUND DATA
